@@ -15,6 +15,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -202,8 +203,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshUser = async () => {
+    if (!firebaseUser) return;
+    
+    try {
+      console.log('刷新用戶數據...');
+      const userData = await firestoreService.getUser(firebaseUser.uid);
+      if (userData) {
+        console.log('獲取到的用戶數據:', userData);
+        // 獲取會員等級信息並添加到用戶對象
+        const membership = await firestoreService.getMembershipLevel(userData.membership_level_id);
+        const userWithMembership: User = {
+          ...userData,
+          icon: membership?.icon,
+          color: membership?.color,
+          membership_name: membership?.name,
+        };
+        console.log('更新後的用戶數據:', userWithMembership);
+        setUser(userWithMembership);
+      }
+    } catch (error) {
+      console.error('刷新用戶數據失敗:', error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, firebaseUser, login, register, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

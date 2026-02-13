@@ -2,12 +2,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
+
+  // 調試：檢查用戶角色
+  console.log('Navbar - 當前用戶:', user);
+  console.log('Navbar - 用戶角色:', user?.role);
+  console.log('Navbar - 是否為管理員:', user?.role === 'admin');
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleRefresh = async () => {
+    await refreshUser();
+    alert('用戶數據已刷新，請檢查是否顯示管理後台按鈕');
   };
 
   return (
@@ -79,8 +89,22 @@ const Navbar = () => {
                         {user.membership_name}
                       </span>
                     )}
+                    {user.role && (
+                      <span className="text-xs text-gray-500">
+                        角色: {user.role === 'admin' ? '管理員' : '普通用戶'}
+                      </span>
+                    )}
                   </div>
                 </div>
+                {user.role !== 'admin' && (
+                  <button
+                    onClick={handleRefresh}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                    title="如果已將角色改為管理員，點擊此按鈕刷新數據"
+                  >
+                    刷新
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
