@@ -25,7 +25,7 @@ const Login = () => {
         if (err.message.includes('auth/user-not-found')) {
           errorMessage = '用戶不存在';
         } else if (err.message.includes('auth/wrong-password') || err.message.includes('auth/invalid-credential')) {
-          errorMessage = '密碼錯誤';
+          errorMessage = '郵箱或密碼錯誤，請確認後重試。如果還沒有帳戶，請先註冊。';
         } else if (err.message.includes('auth/invalid-email')) {
           errorMessage = '郵箱格式不正確';
         } else if (err.message.includes('auth/too-many-requests')) {
@@ -85,10 +85,15 @@ const Login = () => {
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
           還沒有帳戶？{' '}
-          <Link to="/register" className="text-blue-600 hover:text-blue-700">
+          <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
             立即註冊
           </Link>
         </p>
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+          <p className="font-semibold mb-1">💡 提示：</p>
+          <p>如果您是第一次使用，請先點擊「立即註冊」創建帳戶。</p>
+          <p className="mt-1">如果忘記密碼，請確認您輸入的郵箱和密碼是否正確。</p>
+        </div>
       </div>
     </div>
   );

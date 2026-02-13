@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             break;
           case 'auth/wrong-password':
           case 'auth/invalid-credential':
-            errorMessage = '密碼錯誤';
+            errorMessage = '郵箱或密碼錯誤，請確認後重試。如果還沒有帳戶，請先註冊。';
             break;
           case 'auth/invalid-email':
             errorMessage = '郵箱格式不正確';
