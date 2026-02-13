@@ -6,7 +6,7 @@ import { firestoreService, Product } from '../services/firestore';
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, firebaseUser } = useAuth();
+  const { firebaseUser } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);

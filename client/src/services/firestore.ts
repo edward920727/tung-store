@@ -11,7 +11,6 @@ import {
   orderBy,
   Timestamp,
   serverTimestamp,
-  QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -25,6 +24,10 @@ export interface User {
   points: number;
   total_spent: number;
   created_at: Timestamp;
+  // 可選的會員信息（用於顯示）
+  icon?: string;
+  color?: string;
+  membership_name?: string;
 }
 
 export interface MembershipLevel {

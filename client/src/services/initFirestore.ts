@@ -1,5 +1,5 @@
 import { firestoreService, MembershipLevel } from './firestore';
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 /**
