@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -98,9 +99,20 @@ export interface Coupon {
 class FirestoreService {
   // ========== 用戶相關 ==========
   async getUser(userId: string): Promise<User | null> {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (!userDoc.exists()) return null;
-    return { id: userDoc.id, ...userDoc.data() } as User;
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (!userDoc.exists()) {
+        console.log('用戶文檔不存在，UID:', userId);
+        // 嘗試通過 email 查找
+        return null;
+      }
+      const userData = { id: userDoc.id, ...userDoc.data() } as User;
+      console.log('找到用戶文檔:', userData);
+      return userData;
+    } catch (error) {
+      console.error('獲取用戶失敗:', error);
+      return null;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -111,12 +123,22 @@ class FirestoreService {
     return { id: doc.id, ...doc.data() } as User;
   }
 
-  async createUser(userData: Omit<User, 'id' | 'created_at'>): Promise<string> {
-    const docRef = await addDoc(collection(db, 'users'), {
-      ...userData,
-      created_at: serverTimestamp(),
-    });
-    return docRef.id;
+  async createUser(userData: Omit<User, 'id' | 'created_at'>, userId?: string): Promise<string> {
+    // 如果提供了 userId（Firebase UID），使用它作為文檔 ID
+    // 否則使用 addDoc 創建隨機 ID
+    if (userId) {
+      await setDoc(doc(db, 'users', userId), {
+        ...userData,
+        created_at: serverTimestamp(),
+      });
+      return userId;
+    } else {
+      const docRef = await addDoc(collection(db, 'users'), {
+        ...userData,
+        created_at: serverTimestamp(),
+      });
+      return docRef.id;
+    }
   }
 
   async updateUser(userId: string, updates: Partial<User>): Promise<void> {

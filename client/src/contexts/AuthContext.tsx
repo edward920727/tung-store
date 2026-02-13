@@ -43,7 +43,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         // 從 Firestore 獲取用戶信息
         try {
-          const userData = await firestoreService.getUser(firebaseUser.uid);
+          console.log('嘗試獲取用戶數據，UID:', firebaseUser.uid, 'Email:', firebaseUser.email);
+          let userData = await firestoreService.getUser(firebaseUser.uid);
+          
+          // 如果通過 UID 找不到，嘗試通過 email 查找
+          if (!userData && firebaseUser.email) {
+            console.log('通過 UID 找不到，嘗試通過 email 查找:', firebaseUser.email);
+            userData = await firestoreService.getUserByEmail(firebaseUser.email);
+            if (userData) {
+              console.log('通過 email 找到用戶，但文檔 ID 不匹配。需要遷移文檔...');
+              // 如果找到用戶但 ID 不匹配，創建一個新的文檔使用 UID 作為 ID
+              // 但保留原有用戶的數據（除了 id）
+              const { id: oldId, ...userDataWithoutId } = userData;
+              await firestoreService.createUser(userDataWithoutId as Omit<User, 'id' | 'created_at'>, firebaseUser.uid);
+              // 重新獲取
+              userData = await firestoreService.getUser(firebaseUser.uid);
+            }
+          }
+          
+          console.log('獲取到的用戶數據:', userData);
           if (userData) {
             // 獲取會員等級信息並添加到用戶對象
             const membership = await firestoreService.getMembershipLevel(userData.membership_level_id);
@@ -57,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setPendingUsername(null); // 清除待處理的用戶名
           } else {
             // 如果 Firestore 中沒有用戶文檔，創建一個
+            console.log('Firestore 中沒有用戶文檔，創建新用戶...');
             const defaultLevel = await firestoreService.getMembershipLevels();
             const defaultLevelId = defaultLevel.length > 0 ? defaultLevel[0].id : '';
             
@@ -64,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const allUsers = await firestoreService.getAllUsers();
             const hasAdmin = allUsers.some(u => u.role === 'admin');
             const userRole = hasAdmin ? 'user' : 'admin';
+            console.log('新用戶角色:', userRole, '已有管理員:', hasAdmin);
             
             const newUser: Omit<User, 'id' | 'created_at'> = {
               username: pendingUsername || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'user',
@@ -74,8 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               total_spent: 0,
             };
             
-            await firestoreService.createUser(newUser);
+            // 使用 Firebase UID 作為 Firestore 文檔 ID
+            console.log('創建用戶文檔，UID:', firebaseUser.uid);
+            await firestoreService.createUser(newUser, firebaseUser.uid);
             const createdUser = await firestoreService.getUser(firebaseUser.uid);
+            console.log('創建後的用戶數據:', createdUser);
             if (createdUser) {
               const membership = await firestoreService.getMembershipLevel(createdUser.membership_level_id);
               const userWithMembership: User = {
@@ -84,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 color: membership?.color,
                 membership_name: membership?.name,
               };
+              console.log('設置用戶數據:', userWithMembership);
               setUser(userWithMembership);
             }
             setPendingUsername(null); // 清除待處理的用戶名
