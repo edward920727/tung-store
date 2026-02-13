@@ -1,35 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  image_url: string;
-  category: string;
-}
+import { firestoreService, Product } from '../services/firestore';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, firebaseUser } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    fetchProduct();
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
 
   const fetchProduct = async () => {
+    if (!id) return;
     try {
-      const response = await axios.get(`/api/products/${id}`);
-      setProduct(response.data);
+      const prod = await firestoreService.getProduct(id);
+      setProduct(prod);
     } catch (error) {
       console.error('獲取商品失敗:', error);
     } finally {
@@ -38,20 +31,19 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    if (!user) {
+    if (!firebaseUser) {
       navigate('/login');
       return;
     }
 
+    if (!product) return;
+
     setAdding(true);
     try {
-      await axios.post('/api/cart', {
-        product_id: product?.id,
-        quantity: quantity
-      });
+      await firestoreService.addToCart(firebaseUser.uid, product.id, quantity);
       alert('商品已添加到購物車！');
     } catch (error: any) {
-      alert(error.response?.data?.error || '添加失敗');
+      alert(error.message || '添加失敗');
     } finally {
       setAdding(false);
     }

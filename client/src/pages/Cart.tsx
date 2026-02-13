@@ -1,31 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-interface CartItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  name: string;
-  price: number;
-  image_url: string;
-  stock: number;
-}
+import { useAuth } from '../contexts/AuthContext';
+import { firestoreService, CartItem, OrderItem } from '../services/firestore';
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { user, firebaseUser } = useAuth();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
-    fetchCart();
-  }, []);
+    if (firebaseUser) {
+      fetchCart();
+    } else {
+      setLoading(false);
+    }
+  }, [firebaseUser]);
 
   const fetchCart = async () => {
+    if (!firebaseUser) return;
     try {
-      const response = await axios.get('/api/cart');
-      setCartItems(Array.isArray(response.data) ? response.data : []);
+      const items = await firestoreService.getCartItems(firebaseUser.uid);
+      setCartItems(items);
     } catch (error) {
       console.error('獲取購物車失敗:', error);
       setCartItems([]);
@@ -34,20 +31,20 @@ const Cart = () => {
     }
   };
 
-  const updateQuantity = async (id: number, quantity: number) => {
+  const updateQuantity = async (cartItemId: string, quantity: number) => {
     if (quantity < 1) return;
     
     try {
-      await axios.put(`/api/cart/${id}`, { quantity });
+      await firestoreService.updateCartItem(cartItemId, quantity);
       fetchCart();
     } catch (error: any) {
-      alert(error.response?.data?.error || '更新失敗');
+      alert(error.message || '更新失敗');
     }
   };
 
-  const removeItem = async (id: number) => {
+  const removeItem = async (cartItemId: string) => {
     try {
-      await axios.delete(`/api/cart/${id}`);
+      await firestoreService.removeCartItem(cartItemId);
       fetchCart();
     } catch (error) {
       console.error('刪除失敗:', error);
@@ -55,26 +52,70 @@ const Cart = () => {
   };
 
   const checkout = async () => {
-    if (cartItems.length === 0) return;
+    if (!firebaseUser || cartItems.length === 0) return;
     
     setCheckingOut(true);
     try {
-      await axios.post('/api/orders');
+      // 計算總金額
+      const totalAmount = cartItems.reduce((sum, item) => {
+        if (item.product) {
+          return sum + item.product.price * item.quantity;
+        }
+        return sum;
+      }, 0);
+
+      // 創建訂單項
+      const orderItems: OrderItem[] = cartItems.map(item => ({
+        id: item.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.product?.price || 0,
+        name: item.product?.name,
+        image_url: item.product?.image_url,
+      }));
+
+      // 創建訂單
+      await firestoreService.createOrder(firebaseUser.uid, orderItems, totalAmount);
+
+      // 清空購物車
+      await firestoreService.clearCart(firebaseUser.uid);
+
       alert('訂單創建成功！');
       navigate('/orders');
     } catch (error: any) {
-      alert(error.response?.data?.error || '下單失敗');
+      alert(error.message || '下單失敗');
     } finally {
       setCheckingOut(false);
     }
   };
 
-  const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = cartItems.reduce((sum, item) => {
+    if (item.product) {
+      return sum + item.product.price * item.quantity;
+    }
+    return sum;
+  }, 0);
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">加載中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">
+          <p className="text-lg text-gray-500 mb-4">請先登錄</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
+          >
+            登錄
+          </button>
+        </div>
       </div>
     );
   }
@@ -101,13 +142,13 @@ const Cart = () => {
                 <div key={item.id} className="p-6 border-b border-gray-200 last:border-b-0">
                   <div className="flex items-center">
                     <img
-                      src={item.image_url || 'https://via.placeholder.com/100x100'}
-                      alt={item.name}
+                      src={item.product?.image_url || 'https://via.placeholder.com/100x100'}
+                      alt={item.product?.name || '商品'}
                       className="w-24 h-24 object-cover rounded-md"
                     />
                     <div className="ml-4 flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
-                      <p className="text-blue-600 font-bold">¥{item.price}</p>
+                      <h3 className="text-lg font-semibold text-gray-900">{item.product?.name || '商品'}</h3>
+                      <p className="text-blue-600 font-bold">¥{item.product?.price || 0}</p>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center border border-gray-300 rounded-md">
@@ -126,7 +167,7 @@ const Cart = () => {
                         </button>
                       </div>
                       <p className="text-lg font-semibold w-24 text-right">
-                        ¥{(item.price * item.quantity).toFixed(2)}
+                        ¥{((item.product?.price || 0) * item.quantity).toFixed(2)}
                       </p>
                       <button
                         onClick={() => removeItem(item.id)}

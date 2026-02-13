@@ -1,37 +1,26 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-interface Order {
-  id: number;
-  user_id: number;
-  total_amount: number;
-  status: string;
-  created_at: string;
-  items?: OrderItem[];
-}
-
-interface OrderItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  price: number;
-  name?: string;
-  image_url?: string;
-}
+import { useAuth } from '../contexts/AuthContext';
+import { firestoreService, Order } from '../services/firestore';
 
 const Orders = () => {
+  const { user, firebaseUser } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (firebaseUser) {
+      fetchOrders();
+    } else {
+      setLoading(false);
+    }
+  }, [firebaseUser]);
 
   const fetchOrders = async () => {
+    if (!firebaseUser) return;
     try {
-      const response = await axios.get('/api/orders');
-      setOrders(Array.isArray(response.data) ? response.data : []);
+      const userOrders = await firestoreService.getOrders(firebaseUser.uid);
+      setOrders(userOrders);
     } catch (error) {
       console.error('獲取訂單失敗:', error);
       setOrders([]);
@@ -40,13 +29,9 @@ const Orders = () => {
     }
   };
 
-  const fetchOrderDetail = async (id: number) => {
+  const fetchOrderDetail = async (orderId: string) => {
     try {
-      const response = await axios.get(`/api/orders/${id}`);
-      const order = response.data;
-      if (order && order.items && !Array.isArray(order.items)) {
-        order.items = [];
-      }
+      const order = await firestoreService.getOrder(orderId);
       setSelectedOrder(order);
     } catch (error) {
       console.error('獲取訂單詳情失敗:', error);
@@ -82,10 +67,31 @@ const Orders = () => {
     return statusMap[status] || status;
   };
 
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return '';
+    if (timestamp.toDate) {
+      return timestamp.toDate().toLocaleString('zh-CN');
+    }
+    if (timestamp instanceof Date) {
+      return timestamp.toLocaleString('zh-CN');
+    }
+    return new Date(timestamp).toLocaleString('zh-CN');
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">加載中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">
+          <p className="text-lg text-gray-500 mb-4">請先登錄</p>
+        </div>
       </div>
     );
   }
@@ -108,9 +114,9 @@ const Orders = () => {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">訂單 #{order.id}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">訂單 #{order.id.slice(0, 8)}</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {new Date(order.created_at).toLocaleString('zh-CN')}
+                    {formatDate(order.created_at)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -124,9 +130,9 @@ const Orders = () => {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="font-semibold mb-2">訂單詳情:</h4>
                   <div className="space-y-2">
-                    {selectedOrder.items.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span>{item.name} x {item.quantity}</span>
+                    {selectedOrder.items.map((item, index) => (
+                      <div key={item.id || index} className="flex justify-between text-sm">
+                        <span>{item.name || '商品'} x {item.quantity}</span>
                         <span>¥{(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}

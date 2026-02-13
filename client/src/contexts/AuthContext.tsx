@@ -1,33 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
-
-// 設置 axios 的默認 baseURL
-if (API_BASE_URL) {
-  axios.defaults.baseURL = API_BASE_URL;
-}
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  membership_level_id?: number;
-  points?: number;
-  total_spent?: number;
-  membership_name?: string;
-  membership_description?: string;
-  discount_percentage?: number;
-  color?: string;
-  icon?: string;
-}
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { firestoreService, User } from '../services/firestore';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  firebaseUser: FirebaseUser | null;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
 }
 
@@ -43,58 +30,101 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
+    // 監聽 Firebase 認證狀態變化
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setFirebaseUser(firebaseUser);
+      
+      if (firebaseUser) {
+        // 從 Firestore 獲取用戶信息
+        try {
+          const userData = await firestoreService.getUser(firebaseUser.uid);
+          if (userData) {
+            setUser(userData);
+          } else {
+            // 如果 Firestore 中沒有用戶文檔，創建一個
+            const defaultLevel = await firestoreService.getMembershipLevels();
+            const defaultLevelId = defaultLevel.length > 0 ? defaultLevel[0].id : '';
+            
+            const newUser: Omit<User, 'id' | 'created_at'> = {
+              username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'user',
+              email: firebaseUser.email || '',
+              role: 'user',
+              membership_level_id: defaultLevelId,
+              points: 0,
+              total_spent: 0,
+            };
+            
+            await firestoreService.createUser(newUser);
+            const createdUser = await firestoreService.getUser(firebaseUser.uid);
+            setUser(createdUser);
+          }
+        } catch (error) {
+          console.error('獲取用戶信息失敗:', error);
+        }
+      } else {
+        setUser(null);
+      }
+      
       setLoading(false);
-    }
-  }, [token]);
+    });
 
-  const fetchUser = async () => {
-    try {
-      const response = await axios.get('/api/users/me');
-      setUser(response.data);
-    } catch (error) {
-      localStorage.removeItem('token');
-      setToken(null);
-      delete axios.defaults.headers.common['Authorization'];
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await axios.post('/api/auth/login', { email, password });
-    const { token: newToken, user: userData } = response.data;
-    setToken(newToken);
-    setUser(userData);
-    localStorage.setItem('token', newToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged 會自動處理用戶狀態更新
+    } catch (error: any) {
+      console.error('登錄失敗:', error);
+      throw new Error(error.message || '登錄失敗');
+    }
   };
 
   const register = async (username: string, email: string, password: string) => {
-    const response = await axios.post('/api/auth/register', { username, email, password });
-    const { token: newToken, user: userData } = response.data;
-    setToken(newToken);
-    setUser(userData);
-    localStorage.setItem('token', newToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    try {
+      // 創建 Firebase 用戶
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // 獲取默認會員等級
+      const membershipLevels = await firestoreService.getMembershipLevels();
+      const defaultLevelId = membershipLevels.length > 0 ? membershipLevels[0].id : '';
+
+      // 在 Firestore 中創建用戶文檔
+      const newUser: Omit<User, 'id' | 'created_at'> = {
+        username,
+        email,
+        role: 'user',
+        membership_level_id: defaultLevelId,
+        points: 0,
+        total_spent: 0,
+      };
+
+      await firestoreService.createUser(newUser);
+      // onAuthStateChanged 會自動處理用戶狀態更新
+    } catch (error: any) {
+      console.error('註冊失敗:', error);
+      throw new Error(error.message || '註冊失敗');
+    }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setFirebaseUser(null);
+    } catch (error) {
+      console.error('登出失敗:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, firebaseUser, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

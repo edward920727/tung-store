@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  image_url: string;
-  category: string;
-}
+import { firestoreService, Product } from '../services/firestore';
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -29,8 +19,8 @@ const Products = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('/api/products/categories/list');
-      setCategories(Array.isArray(response.data) ? response.data : []);
+      const cats = await firestoreService.getCategories();
+      setCategories(cats);
     } catch (error) {
       console.error('獲取分類失敗:', error);
       setCategories([]);
@@ -40,12 +30,12 @@ const Products = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params: any = {};
-      if (selectedCategory) params.category = selectedCategory;
-      if (searchTerm) params.search = searchTerm;
+      const filters: { category?: string; search?: string } = {};
+      if (selectedCategory) filters.category = selectedCategory;
+      if (searchTerm) filters.search = searchTerm;
       
-      const response = await axios.get('/api/products', { params });
-      setProducts(Array.isArray(response.data) ? response.data : []);
+      const prods = await firestoreService.getProducts(filters);
+      setProducts(prods);
     } catch (error) {
       console.error('獲取商品失敗:', error);
       setProducts([]);

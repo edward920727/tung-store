@@ -1,65 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import ImageCropper from '../components/ImageCropper';
-
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  image_url: string;
-  category: string;
-}
-
-interface Order {
-  id: number;
-  user_id: number;
-  total_amount: number;
-  status: string;
-  created_at: string;
-}
-
-interface Coupon {
-  id: number;
-  code: string;
-  description: string;
-  discount_type: 'percentage' | 'fixed';
-  discount_value: number;
-  min_purchase?: number;
-  max_discount?: number;
-  valid_from: string;
-  valid_until: string;
-  usage_limit?: number;
-  used_count: number;
-  is_active: number;
-  created_at: string;
-}
-
-interface MembershipLevel {
-  id: number;
-  name: string;
-  description: string;
-  discount_percentage: number;
-  min_points: number;
-  color: string;
-  icon: string;
-  created_at: string;
-}
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: 'user' | 'admin';
-  membership_level_id: number;
-  points: number;
-  total_spent: number;
-  created_at: string;
-  membership_name?: string;
-  color?: string;
-  icon?: string;
-}
+import { firestoreService, Product, Order, Coupon, MembershipLevel, User } from '../services/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'coupons' | 'membership' | 'users'>('products');
@@ -128,8 +70,8 @@ const Admin = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/products');
-      setProducts(Array.isArray(response.data) ? response.data : []);
+      const prods = await firestoreService.getProducts();
+      setProducts(prods);
     } catch (error) {
       console.error('獲取商品失敗:', error);
       setProducts([]);
@@ -141,8 +83,8 @@ const Admin = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/orders');
-      setOrders(Array.isArray(response.data) ? response.data : []);
+      const allOrders = await firestoreService.getAllOrders();
+      setOrders(allOrders);
     } catch (error) {
       console.error('獲取訂單失敗:', error);
       setOrders([]);
@@ -154,8 +96,8 @@ const Admin = () => {
   const fetchCoupons = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/coupons');
-      setCoupons(Array.isArray(response.data) ? response.data : []);
+      const couponList = await firestoreService.getCoupons();
+      setCoupons(couponList);
     } catch (error) {
       console.error('獲取優惠券失敗:', error);
       setCoupons([]);
@@ -167,8 +109,8 @@ const Admin = () => {
   const fetchMembershipLevels = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/membership/levels');
-      setMembershipLevels(Array.isArray(response.data) ? response.data : []);
+      const levels = await firestoreService.getMembershipLevels();
+      setMembershipLevels(levels);
     } catch (error) {
       console.error('獲取會員等級失敗:', error);
       setMembershipLevels([]);
@@ -180,8 +122,20 @@ const Admin = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/users');
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      const userList = await firestoreService.getAllUsers();
+      // 為每個用戶獲取會員等級信息
+      const usersWithMembership = await Promise.all(
+        userList.map(async (user) => {
+          const membership = await firestoreService.getMembershipLevel(user.membership_level_id);
+          return {
+            ...user,
+            membership_name: membership?.name,
+            color: membership?.color,
+            icon: membership?.icon,
+          };
+        })
+      );
+      setUsers(usersWithMembership);
     } catch (error) {
       console.error('獲取用戶列表失敗:', error);
       setUsers([]);
@@ -197,10 +151,19 @@ const Admin = () => {
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const productData = {
+        name: productFormData.name,
+        description: productFormData.description,
+        price: parseFloat(productFormData.price),
+        stock: parseInt(productFormData.stock),
+        image_url: productFormData.image_url,
+        category: productFormData.category,
+      };
+
       if (editingProduct) {
-        await axios.put(`/api/products/${editingProduct.id}`, productFormData);
+        await firestoreService.updateProduct(editingProduct.id, productData);
       } else {
-        await axios.post('/api/products', productFormData);
+        await firestoreService.createProduct(productData);
       }
       setShowProductForm(false);
       setEditingProduct(null);
@@ -215,18 +178,24 @@ const Admin = () => {
   const handleCouponSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const data = {
-        ...couponFormData,
+      const couponData: Omit<Coupon, 'id' | 'created_at'> = {
+        code: couponFormData.code,
+        description: couponFormData.description,
+        discount_type: couponFormData.discount_type,
         discount_value: parseFloat(couponFormData.discount_value),
-        min_purchase: couponFormData.min_purchase ? parseFloat(couponFormData.min_purchase) : null,
-        max_discount: couponFormData.max_discount ? parseFloat(couponFormData.max_discount) : null,
-        usage_limit: couponFormData.usage_limit ? parseInt(couponFormData.usage_limit) : null,
+        min_purchase: couponFormData.min_purchase ? parseFloat(couponFormData.min_purchase) : undefined,
+        max_discount: couponFormData.max_discount ? parseFloat(couponFormData.max_discount) : undefined,
+        valid_from: Timestamp.fromDate(new Date(couponFormData.valid_from)),
+        valid_until: Timestamp.fromDate(new Date(couponFormData.valid_until)),
+        usage_limit: couponFormData.usage_limit ? parseInt(couponFormData.usage_limit) : undefined,
+        used_count: editingCoupon?.used_count || 0,
+        is_active: couponFormData.is_active === 1,
       };
 
       if (editingCoupon) {
-        await axios.put(`/api/coupons/${editingCoupon.id}`, data);
+        await firestoreService.updateCoupon(editingCoupon.id, couponData);
       } else {
-        await axios.post('/api/coupons', data);
+        await firestoreService.createCoupon(couponData);
       }
       setShowCouponForm(false);
       setEditingCoupon(null);
@@ -245,7 +214,7 @@ const Admin = () => {
       fetchCoupons();
     } catch (error: any) {
       console.error('保存優惠券失敗:', error);
-      alert(error.response?.data?.error || '保存失敗，請檢查輸入');
+      alert(error.message || '保存失敗，請檢查輸入');
     }
   };
 
@@ -264,6 +233,23 @@ const Admin = () => {
 
   const handleEditCoupon = (coupon: Coupon) => {
     setEditingCoupon(coupon);
+    const formatDate = (timestamp: Timestamp | Date | string) => {
+      let date: Date;
+      if (timestamp instanceof Timestamp) {
+        date = timestamp.toDate();
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else {
+        date = new Date(timestamp);
+      }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     setCouponFormData({
       code: coupon.code,
       description: coupon.description,
@@ -271,18 +257,18 @@ const Admin = () => {
       discount_value: coupon.discount_value.toString(),
       min_purchase: coupon.min_purchase?.toString() || '',
       max_discount: coupon.max_discount?.toString() || '',
-      valid_from: coupon.valid_from.split('T')[0] + 'T' + coupon.valid_from.split('T')[1]?.substring(0, 5),
-      valid_until: coupon.valid_until.split('T')[0] + 'T' + coupon.valid_until.split('T')[1]?.substring(0, 5),
+      valid_from: formatDate(coupon.valid_from),
+      valid_until: formatDate(coupon.valid_until),
       usage_limit: coupon.usage_limit?.toString() || '',
-      is_active: coupon.is_active
+      is_active: coupon.is_active ? 1 : 0
     });
     setShowCouponForm(true);
   };
 
-  const handleDeleteProduct = async (id: number) => {
+  const handleDeleteProduct = async (id: string) => {
     if (window.confirm('確定要刪除這個商品嗎？')) {
       try {
-        await axios.delete(`/api/products/${id}`);
+        await firestoreService.deleteProduct(id);
         fetchProducts();
       } catch (error) {
         console.error('刪除商品失敗:', error);
@@ -290,10 +276,10 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteCoupon = async (id: number) => {
+  const handleDeleteCoupon = async (id: string) => {
     if (window.confirm('確定要刪除這個優惠券嗎？')) {
       try {
-        await axios.delete(`/api/coupons/${id}`);
+        await firestoreService.deleteCoupon(id);
         fetchCoupons();
       } catch (error) {
         console.error('刪除優惠券失敗:', error);
@@ -304,16 +290,19 @@ const Admin = () => {
   const handleMembershipSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const data = {
-        ...membershipFormData,
+      const levelData: Omit<MembershipLevel, 'id' | 'created_at'> = {
+        name: membershipFormData.name,
+        description: membershipFormData.description,
         discount_percentage: parseFloat(membershipFormData.discount_percentage),
         min_points: parseInt(membershipFormData.min_points),
+        color: membershipFormData.color,
+        icon: membershipFormData.icon,
       };
 
       if (editingMembership) {
-        await axios.put(`/api/membership/levels/${editingMembership.id}`, data);
+        await firestoreService.updateMembershipLevel(editingMembership.id, levelData);
       } else {
-        await axios.post('/api/membership/levels', data);
+        await firestoreService.createMembershipLevel(levelData);
       }
       setShowMembershipForm(false);
       setEditingMembership(null);
@@ -328,7 +317,7 @@ const Admin = () => {
       fetchMembershipLevels();
     } catch (error: any) {
       console.error('保存會員等級失敗:', error);
-      alert(error.response?.data?.error || '保存失敗，請檢查輸入');
+      alert(error.message || '保存失敗，請檢查輸入');
     }
   };
 
@@ -345,20 +334,20 @@ const Admin = () => {
     setShowMembershipForm(true);
   };
 
-  const handleDeleteMembership = async (id: number) => {
+  const handleDeleteMembership = async (id: string) => {
     if (window.confirm('確定要刪除這個會員等級嗎？')) {
       try {
-        await axios.delete(`/api/membership/levels/${id}`);
+        await firestoreService.deleteMembershipLevel(id);
         fetchMembershipLevels();
       } catch (error: any) {
-        alert(error.response?.data?.error || '刪除失敗');
+        alert(error.message || '刪除失敗');
       }
     }
   };
 
-  const handleUpdateOrderStatus = async (orderId: number, status: string) => {
+  const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
-      await axios.put(`/api/orders/${orderId}/status`, { status });
+      await firestoreService.updateOrderStatus(orderId, status as Order['status']);
       fetchOrders();
     } catch (error) {
       console.error('更新訂單狀態失敗:', error);
@@ -380,14 +369,10 @@ const Admin = () => {
 
     try {
       // 更新會員等級
-      await axios.put(`/api/membership/user/${editingUser.id}/level`, {
-        membership_level_id: parseInt(userEditFormData.membership_level_id)
-      });
+      await firestoreService.updateUserMembershipLevel(editingUser.id, userEditFormData.membership_level_id);
 
       // 更新積分（這會自動更新會員等級）
-      await axios.put(`/api/membership/user/${editingUser.id}/points`, {
-        points: parseInt(userEditFormData.points)
-      });
+      await firestoreService.updateUserPoints(editingUser.id, parseInt(userEditFormData.points));
 
       setShowUserEditForm(false);
       setEditingUser(null);
@@ -396,7 +381,7 @@ const Admin = () => {
       alert('用戶信息已更新');
     } catch (error: any) {
       console.error('更新用戶信息失敗:', error);
-      alert(error.response?.data?.error || '更新失敗，請檢查輸入');
+      alert(error.message || '更新失敗，請檢查輸入');
     }
   };
 
@@ -604,7 +589,7 @@ const Admin = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
                     <tr key={product.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.id.slice(0, 8)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <img
                           src={product.image_url || 'https://via.placeholder.com/50x50'}
@@ -660,8 +645,8 @@ const Admin = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {orders.map((order) => (
                     <tr key={order.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.id.slice(0, 8)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_id.slice(0, 8)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥{order.total_amount.toFixed(2)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs ${
@@ -675,7 +660,9 @@ const Admin = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(order.created_at).toLocaleString('zh-CN')}
+                        {order.created_at && (order.created_at instanceof Timestamp 
+                          ? order.created_at.toDate().toLocaleString('zh-CN')
+                          : new Date(order.created_at).toLocaleString('zh-CN'))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <select
@@ -881,8 +868,11 @@ const Admin = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {coupons.map((coupon) => {
-                    const isExpired = new Date(coupon.valid_until) < new Date();
-                    const isActive = coupon.is_active === 1 && !isExpired;
+                    const validUntil = coupon.valid_until instanceof Timestamp 
+                      ? coupon.valid_until.toDate() 
+                      : new Date(coupon.valid_until);
+                    const isExpired = validUntil < new Date();
+                    const isActive = coupon.is_active && !isExpired;
                     return (
                       <tr key={coupon.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{coupon.code}</td>
@@ -896,8 +886,12 @@ const Admin = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div>{new Date(coupon.valid_from).toLocaleDateString('zh-CN')}</div>
-                          <div className="text-xs text-gray-500">至 {new Date(coupon.valid_until).toLocaleDateString('zh-CN')}</div>
+                          <div>{coupon.valid_from instanceof Timestamp 
+                            ? coupon.valid_from.toDate().toLocaleDateString('zh-CN')
+                            : new Date(coupon.valid_from).toLocaleDateString('zh-CN')}</div>
+                          <div className="text-xs text-gray-500">至 {coupon.valid_until instanceof Timestamp
+                            ? coupon.valid_until.toDate().toLocaleDateString('zh-CN')
+                            : new Date(coupon.valid_until).toLocaleDateString('zh-CN')}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {coupon.used_count} / {coupon.usage_limit || '∞'}
@@ -1205,7 +1199,7 @@ const Admin = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id.slice(0, 8)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1230,7 +1224,9 @@ const Admin = () => {
                         ${(user.total_spent || 0).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(user.created_at).toLocaleDateString('zh-TW')}
+                        {user.created_at && (user.created_at instanceof Timestamp
+                          ? user.created_at.toDate().toLocaleDateString('zh-TW')
+                          : new Date(user.created_at).toLocaleDateString('zh-TW'))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
