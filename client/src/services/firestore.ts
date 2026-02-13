@@ -95,6 +95,43 @@ export interface Coupon {
   created_at: Timestamp;
 }
 
+export interface HomePageConfig {
+  id: string;
+  // Hero 區域
+  heroTitle: string;
+  heroSubtitle: string;
+  heroBackgroundImage: string;
+  heroButtonText: string;
+  heroButtonLink: string;
+  
+  // 顏色主題
+  primaryColor: string; // 主色
+  secondaryColor: string; // 輔助色
+  gradientFrom: string; // 漸變起始色
+  gradientTo: string; // 漸變結束色
+  
+  // 精選商品
+  featuredProductIds: string[]; // 精選商品 ID 列表
+  
+  // 布局選項
+  layout: 'default' | 'compact' | 'wide'; // 布局類型
+  showFeatures: boolean; // 是否顯示特色區塊
+  showGallery: boolean; // 是否顯示畫廊
+  
+  // 特色區塊
+  features: Array<{
+    title: string;
+    description: string;
+    icon: string;
+    imageUrl: string;
+    gradientFrom: string;
+    gradientTo: string;
+  }>;
+  
+  updated_at: Timestamp;
+  created_at: Timestamp;
+}
+
 // Firestore 服務類
 class FirestoreService {
   // ========== 用戶相關 ==========

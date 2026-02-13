@@ -1,18 +1,41 @@
 import { useState, useEffect } from 'react';
 import ImageCropper from '../components/ImageCropper';
-import { firestoreService, Product, Order, Coupon, MembershipLevel, User } from '../services/firestore';
+import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig } from '../services/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
 const Admin = () => {
   const { firebaseUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'coupons' | 'membership' | 'users'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'coupons' | 'membership' | 'users' | 'homepage'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [membershipLevels, setMembershipLevels] = useState<MembershipLevel[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // 首頁配置相關狀態
+  const [homePageConfig, setHomePageConfig] = useState<HomePageConfig | null>(null);
+  const [homeConfigFormData, setHomeConfigFormData] = useState({
+    heroTitle: '',
+    heroSubtitle: '',
+    heroBackgroundImage: '',
+    heroButtonText: '',
+    heroButtonLink: '/products',
+    primaryColor: '#EC4899',
+    secondaryColor: '#8B5CF6',
+    gradientFrom: '#EC4899',
+    gradientTo: '#8B5CF6',
+    layout: 'default' as 'default' | 'compact' | 'wide',
+    showFeatures: true,
+    showGallery: true,
+    featuredProductIds: [] as string[],
+    features: [
+      { title: '豐富商品', description: '瀏覽我們精心挑選的童裝，涵蓋各種款式、尺碼和風格', icon: '🛍️', imageUrl: '', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
+      { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: '', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
+      { title: '安全可靠', description: '安全的支付系統和訂單管理，讓您購物無憂', icon: '🔒', imageUrl: '', gradientFrom: '#10B981', gradientTo: '#059669' },
+    ] as Array<{ title: string; description: string; icon: string; imageUrl: string; gradientFrom: string; gradientTo: string }>,
+  });
   const [showProductForm, setShowProductForm] = useState(false);
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [showMembershipForm, setShowMembershipForm] = useState(false);
@@ -67,6 +90,9 @@ const Admin = () => {
     } else if (activeTab === 'users') {
       fetchUsers();
       fetchMembershipLevels(); // 也需要會員等級列表用於編輯
+    } else if (activeTab === 'homepage') {
+      fetchHomePageConfig();
+      fetchProducts(); // 需要商品列表來選擇精選商品
     }
   }, [activeTab]);
 
@@ -144,6 +170,70 @@ const Admin = () => {
       setUsers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHomePageConfig = async () => {
+    setLoading(true);
+    try {
+      const config = await firestoreService.getHomePageConfig();
+      if (config) {
+        setHomePageConfig(config);
+        setHomeConfigFormData({
+          heroTitle: config.heroTitle || '',
+          heroSubtitle: config.heroSubtitle || '',
+          heroBackgroundImage: config.heroBackgroundImage || '',
+          heroButtonText: config.heroButtonText || '瀏覽商品',
+          heroButtonLink: config.heroButtonLink || '/products',
+          primaryColor: config.primaryColor || '#EC4899',
+          secondaryColor: config.secondaryColor || '#8B5CF6',
+          gradientFrom: config.gradientFrom || '#EC4899',
+          gradientTo: config.gradientTo || '#8B5CF6',
+          layout: config.layout || 'default',
+          showFeatures: config.showFeatures !== undefined ? config.showFeatures : true,
+          showGallery: config.showGallery !== undefined ? config.showGallery : true,
+          featuredProductIds: config.featuredProductIds || [],
+          features: config.features || homeConfigFormData.features,
+        });
+      }
+    } catch (error) {
+      console.error('獲取首頁配置失敗:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHomePageConfigSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const configData: Partial<HomePageConfig> = {
+        heroTitle: homeConfigFormData.heroTitle,
+        heroSubtitle: homeConfigFormData.heroSubtitle,
+        heroBackgroundImage: homeConfigFormData.heroBackgroundImage,
+        heroButtonText: homeConfigFormData.heroButtonText,
+        heroButtonLink: homeConfigFormData.heroButtonLink,
+        primaryColor: homeConfigFormData.primaryColor,
+        secondaryColor: homeConfigFormData.secondaryColor,
+        gradientFrom: homeConfigFormData.gradientFrom,
+        gradientTo: homeConfigFormData.gradientTo,
+        layout: homeConfigFormData.layout,
+        showFeatures: homeConfigFormData.showFeatures,
+        showGallery: homeConfigFormData.showGallery,
+        featuredProductIds: homeConfigFormData.featuredProductIds,
+        features: homeConfigFormData.features,
+      };
+
+      if (homePageConfig) {
+        await firestoreService.updateHomePageConfig(configData);
+      } else {
+        await firestoreService.createHomePageConfig(configData as Omit<HomePageConfig, 'id' | 'created_at' | 'updated_at'>);
+      }
+      
+      alert('首頁配置已保存！');
+      fetchHomePageConfig();
+    } catch (error: any) {
+      console.error('保存首頁配置失敗:', error);
+      alert(error.message || '保存失敗');
     }
   };
 
@@ -468,6 +558,16 @@ const Admin = () => {
             }`}
           >
             會員管理
+          </button>
+          <button
+            onClick={() => setActiveTab('homepage')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'homepage'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            首頁設計
           </button>
         </nav>
       </div>
@@ -1295,6 +1395,279 @@ const Admin = () => {
                 <div className="text-center py-12 text-gray-500">暫無會員</div>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'homepage' && (
+        <div>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">首頁設計</h2>
+            <p className="text-sm text-gray-600 mt-1">自定義首頁的布局、顏色和精選商品</p>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-12">加載中...</div>
+          ) : (
+            <form onSubmit={handleHomePageConfigSubmit} className="space-y-6">
+              {/* Hero 區域設置 */}
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Hero 區域設置</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">主標題 *</label>
+                    <input
+                      type="text"
+                      value={homeConfigFormData.heroTitle}
+                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroTitle: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      placeholder="歡迎來到小童服飾"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">副標題 *</label>
+                    <input
+                      type="text"
+                      value={homeConfigFormData.heroSubtitle}
+                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroSubtitle: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      placeholder="發現優質童裝，享受便捷購物體驗"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">按鈕文字 *</label>
+                    <input
+                      type="text"
+                      value={homeConfigFormData.heroButtonText}
+                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonText: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      placeholder="瀏覽商品"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">按鈕連結 *</label>
+                    <input
+                      type="text"
+                      value={homeConfigFormData.heroButtonLink}
+                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonLink: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      placeholder="/products"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">背景圖片 URL</label>
+                    <input
+                      type="url"
+                      value={homeConfigFormData.heroBackgroundImage}
+                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      placeholder="https://images.unsplash.com/..."
+                    />
+                    {homeConfigFormData.heroBackgroundImage && (
+                      <img
+                        src={homeConfigFormData.heroBackgroundImage}
+                        alt="預覽"
+                        className="mt-2 w-full h-48 object-cover rounded-md"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 顏色主題設置 */}
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">顏色主題</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">主色</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={homeConfigFormData.primaryColor}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
+                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={homeConfigFormData.primaryColor}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">輔助色</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={homeConfigFormData.secondaryColor}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
+                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={homeConfigFormData.secondaryColor}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">漸變起始色</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={homeConfigFormData.gradientFrom}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
+                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={homeConfigFormData.gradientFrom}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">漸變結束色</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={homeConfigFormData.gradientTo}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
+                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={homeConfigFormData.gradientTo}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 布局設置 */}
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">布局設置</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">布局類型</label>
+                    <select
+                      value={homeConfigFormData.layout}
+                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, layout: e.target.value as 'default' | 'compact' | 'wide' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                    >
+                      <option value="default">默認</option>
+                      <option value="compact">緊湊</option>
+                      <option value="wide">寬鬆</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={homeConfigFormData.showFeatures}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, showFeatures: e.target.checked })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">顯示特色區塊</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={homeConfigFormData.showGallery}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, showGallery: e.target.checked })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">顯示精選商品畫廊</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 精選商品設置 */}
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">精選商品</h3>
+                <p className="text-sm text-gray-600 mb-4">選擇要在首頁展示的商品（最多 8 個）</p>
+                {products.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">暫無商品，請先添加商品</p>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                      {products.map((product) => (
+                        <label
+                          key={product.id}
+                          className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                            homeConfigFormData.featuredProductIds.includes(product.id)
+                              ? 'border-pink-500 bg-pink-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={homeConfigFormData.featuredProductIds.includes(product.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                if (homeConfigFormData.featuredProductIds.length < 8) {
+                                  setHomeConfigFormData({
+                                    ...homeConfigFormData,
+                                    featuredProductIds: [...homeConfigFormData.featuredProductIds, product.id],
+                                  });
+                                } else {
+                                  alert('最多只能選擇 8 個精選商品');
+                                }
+                              } else {
+                                setHomeConfigFormData({
+                                  ...homeConfigFormData,
+                                  featuredProductIds: homeConfigFormData.featuredProductIds.filter(id => id !== product.id),
+                                });
+                              }
+                            }}
+                            className="mr-3"
+                          />
+                          <img
+                            src={product.image_url || 'https://via.placeholder.com/50x50'}
+                            alt={product.name}
+                            className="w-12 h-12 object-cover rounded mr-3"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                            <p className="text-xs text-gray-500">¥{product.price}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                    {homeConfigFormData.featuredProductIds.length > 0 && (
+                      <div className="mt-4 p-3 bg-blue-50 rounded-md">
+                        <p className="text-sm text-blue-800">
+                          已選擇 {homeConfigFormData.featuredProductIds.length} 個商品
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* 提交按鈕 */}
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
+                >
+                  保存設置
+                </button>
+              </div>
+            </form>
           )}
         </div>
       )}
