@@ -147,6 +147,14 @@ class FirestoreService {
     await updateDoc(doc(db, 'users', userId), updates);
   }
 
+  async deleteUser(userId: string): Promise<void> {
+    // 刪除 Firestore 中的用戶文檔
+    await deleteDoc(doc(db, 'users', userId));
+    
+    // 注意：這只刪除 Firestore 中的用戶文檔
+    // Firebase Authentication 中的用戶需要通過 Firebase Admin SDK 或 Firebase Console 手動刪除
+  }
+
   async getAllUsers(): Promise<User[]> {
     const querySnapshot = await getDocs(collection(db, 'users'));
     return querySnapshot.docs.map(doc => ({

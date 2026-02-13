@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import ImageCropper from '../components/ImageCropper';
 import { firestoreService, Product, Order, Coupon, MembershipLevel, User } from '../services/firestore';
 import { Timestamp } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
 
 const Admin = () => {
+  const { firebaseUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'coupons' | 'membership' | 'users'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -387,6 +389,27 @@ const Admin = () => {
     } catch (error: any) {
       console.error('更新用戶信息失敗:', error);
       alert(error.message || '更新失敗，請檢查輸入');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    // 防止刪除當前登入的用戶
+    if (firebaseUser && userId === firebaseUser.uid) {
+      alert('不能刪除當前登入的用戶！');
+      return;
+    }
+
+    if (!window.confirm(`確定要刪除會員 ${userEmail} 嗎？\n\n注意：\n1. 這只會刪除 Firestore 中的用戶數據\n2. 如需完全刪除，請在 Firebase Console 中同時刪除 Authentication 用戶\n3. 相關的購物車和訂單數據不會自動刪除\n\n此操作無法撤銷！`)) {
+      return;
+    }
+
+    try {
+      await firestoreService.deleteUser(userId);
+      alert('會員已刪除');
+      fetchUsers();
+    } catch (error: any) {
+      console.error('刪除會員失敗:', error);
+      alert(error.message || '刪除失敗');
     }
   };
 
@@ -1245,13 +1268,24 @@ const Admin = () => {
                           ? user.created_at.toDate().toLocaleDateString('zh-TW')
                           : new Date(user.created_at).toLocaleDateString('zh-TW'))}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
                           onClick={() => handleEditUser(user)}
                           className="text-blue-600 hover:text-blue-900"
                         >
                           編輯
                         </button>
+                        {firebaseUser && user.id !== firebaseUser.uid && (
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            刪除
+                          </button>
+                        )}
+                        {firebaseUser && user.id === firebaseUser.uid && (
+                          <span className="text-gray-400 text-xs">（當前用戶）</span>
+                        )}
                       </td>
                     </tr>
                   ))}
