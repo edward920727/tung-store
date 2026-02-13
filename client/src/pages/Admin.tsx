@@ -21,7 +21,8 @@ const Admin = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userEditFormData, setUserEditFormData] = useState({
     membership_level_id: '',
-    points: ''
+    points: '',
+    role: 'user' as 'user' | 'admin'
   });
   const [productFormData, setProductFormData] = useState({
     name: '',
@@ -357,8 +358,9 @@ const Admin = () => {
   const handleEditUser = (user: User) => {
     setEditingUser(user);
     setUserEditFormData({
-      membership_level_id: user.membership_level_id.toString(),
-      points: user.points.toString()
+      membership_level_id: user.membership_level_id,
+      points: user.points.toString(),
+      role: user.role
     });
     setShowUserEditForm(true);
   };
@@ -368,6 +370,9 @@ const Admin = () => {
     if (!editingUser) return;
 
     try {
+      // 更新角色
+      await firestoreService.updateUser(editingUser.id, { role: userEditFormData.role });
+
       // 更新會員等級
       await firestoreService.updateUserMembershipLevel(editingUser.id, userEditFormData.membership_level_id);
 
@@ -376,7 +381,7 @@ const Admin = () => {
 
       setShowUserEditForm(false);
       setEditingUser(null);
-      setUserEditFormData({ membership_level_id: '', points: '' });
+      setUserEditFormData({ membership_level_id: '', points: '', role: 'user' });
       fetchUsers();
       alert('用戶信息已更新');
     } catch (error: any) {
@@ -1128,6 +1133,18 @@ const Admin = () => {
               </div>
               <form onSubmit={handleUserEditSubmit}>
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">角色 *</label>
+                    <select
+                      value={userEditFormData.role}
+                      onChange={(e) => setUserEditFormData({ ...userEditFormData, role: e.target.value as 'user' | 'admin' })}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                    >
+                      <option value="user">普通用戶</option>
+                      <option value="admin">管理員</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">會員等級 *</label>
                     <select

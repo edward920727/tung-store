@@ -59,10 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const defaultLevel = await firestoreService.getMembershipLevels();
             const defaultLevelId = defaultLevel.length > 0 ? defaultLevel[0].id : '';
             
+            // 檢查是否已有管理員，如果沒有，第一個用戶自動成為管理員
+            const allUsers = await firestoreService.getAllUsers();
+            const hasAdmin = allUsers.some(u => u.role === 'admin');
+            const userRole = hasAdmin ? 'user' : 'admin';
+            
             const newUser: Omit<User, 'id' | 'created_at'> = {
               username: pendingUsername || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'user',
               email: firebaseUser.email || '',
-              role: 'user',
+              role: userRole,
               membership_level_id: defaultLevelId,
               points: 0,
               total_spent: 0,
