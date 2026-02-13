@@ -127,10 +127,12 @@ class FirestoreService {
     // 如果提供了 userId（Firebase UID），使用它作為文檔 ID
     // 否則使用 addDoc 創建隨機 ID
     if (userId) {
+      console.log('使用 setDoc 創建用戶，ID:', userId, '數據:', userData);
       await setDoc(doc(db, 'users', userId), {
         ...userData,
         created_at: serverTimestamp(),
       });
+      console.log('用戶文檔已創建');
       return userId;
     } else {
       const docRef = await addDoc(collection(db, 'users'), {

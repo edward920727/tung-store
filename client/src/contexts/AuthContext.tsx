@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const allUsers = await firestoreService.getAllUsers();
             const hasAdmin = allUsers.some(u => u.role === 'admin');
             const userRole = hasAdmin ? 'user' : 'admin';
-            console.log('新用戶角色:', userRole, '已有管理員:', hasAdmin);
+            console.log('新用戶角色:', userRole, '已有管理員:', hasAdmin, '所有用戶:', allUsers);
             
             const newUser: Omit<User, 'id' | 'created_at'> = {
               username: pendingUsername || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'user',
@@ -95,20 +95,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             
             // 使用 Firebase UID 作為 Firestore 文檔 ID
-            console.log('創建用戶文檔，UID:', firebaseUser.uid);
-            await firestoreService.createUser(newUser, firebaseUser.uid);
-            const createdUser = await firestoreService.getUser(firebaseUser.uid);
-            console.log('創建後的用戶數據:', createdUser);
-            if (createdUser) {
-              const membership = await firestoreService.getMembershipLevel(createdUser.membership_level_id);
-              const userWithMembership: User = {
-                ...createdUser,
-                icon: membership?.icon,
-                color: membership?.color,
-                membership_name: membership?.name,
-              };
-              console.log('設置用戶數據:', userWithMembership);
-              setUser(userWithMembership);
+            console.log('創建用戶文檔，UID:', firebaseUser.uid, '用戶數據:', newUser);
+            try {
+              await firestoreService.createUser(newUser, firebaseUser.uid);
+              console.log('用戶文檔創建成功');
+              
+              // 等待一下確保文檔已寫入
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              const createdUser = await firestoreService.getUser(firebaseUser.uid);
+              console.log('創建後的用戶數據:', createdUser);
+              if (createdUser) {
+                const membership = await firestoreService.getMembershipLevel(createdUser.membership_level_id);
+                const userWithMembership: User = {
+                  ...createdUser,
+                  icon: membership?.icon,
+                  color: membership?.color,
+                  membership_name: membership?.name,
+                };
+                console.log('設置用戶數據:', userWithMembership);
+                setUser(userWithMembership);
+              } else {
+                console.error('創建用戶後無法獲取用戶數據');
+              }
+            } catch (error) {
+              console.error('創建用戶文檔失敗:', error);
             }
             setPendingUsername(null); // 清除待處理的用戶名
           }
