@@ -494,6 +494,30 @@ class FirestoreService {
       await updateDoc(doc(db, 'users', userId), { membership_level_id: appropriateLevel.id });
     }
   }
+
+  // ========== 首頁配置相關 ==========
+  async getHomePageConfig(): Promise<HomePageConfig | null> {
+    const docRef = doc(db, 'homepage_config', 'main');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as HomePageConfig;
+    }
+    return null;
+  }
+
+  async updateHomePageConfig(updates: Partial<HomePageConfig>): Promise<void> {
+    const docRef = doc(db, 'homepage_config', 'main');
+    await updateDoc(docRef, { ...updates, updated_at: serverTimestamp() });
+  }
+
+  async createHomePageConfig(configData: Omit<HomePageConfig, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
+    const docRef = doc(db, 'homepage_config', 'main');
+    await setDoc(docRef, {
+      ...configData,
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
+    });
+  }
 }
 
 export const firestoreService = new FirestoreService();

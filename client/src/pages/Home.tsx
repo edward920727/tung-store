@@ -19,9 +19,9 @@ const Home = () => {
       // 如果有精選商品 ID，獲取商品詳情
       if (homeConfig && homeConfig.featuredProductIds.length > 0) {
         const products = await Promise.all(
-          homeConfig.featuredProductIds.map(id => firestoreService.getProduct(id))
+          homeConfig.featuredProductIds.map((id: string) => firestoreService.getProduct(id))
         );
-        setFeaturedProducts(products.filter(p => p !== null) as Product[]);
+        setFeaturedProducts(products.filter((p: Product | null): p is Product => p !== null));
       }
     } catch (error) {
       console.error('獲取首頁配置失敗:', error);
@@ -37,7 +37,6 @@ const Home = () => {
   const heroButtonLink = config?.heroButtonLink || '/products';
   const heroBackgroundImage = config?.heroBackgroundImage || 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=1920&q=80';
   const primaryColor = config?.primaryColor || '#EC4899';
-  const secondaryColor = config?.secondaryColor || '#8B5CF6';
   const gradientFrom = config?.gradientFrom || '#EC4899';
   const gradientTo = config?.gradientTo || '#8B5CF6';
   const showFeatures = config?.showFeatures !== undefined ? config.showFeatures : true;
