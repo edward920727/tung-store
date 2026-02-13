@@ -1,0 +1,176 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+interface CartItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  name: string;
+  price: number;
+  image_url: string;
+  stock: number;
+}
+
+const Cart = () => {
+  const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState(false);
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  const fetchCart = async () => {
+    try {
+      const response = await axios.get('/api/cart');
+      setCartItems(response.data);
+    } catch (error) {
+      console.error('獲取購物車失敗:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuantity = async (id: number, quantity: number) => {
+    if (quantity < 1) return;
+    
+    try {
+      await axios.put(`/api/cart/${id}`, { quantity });
+      fetchCart();
+    } catch (error: any) {
+      alert(error.response?.data?.error || '更新失敗');
+    }
+  };
+
+  const removeItem = async (id: number) => {
+    try {
+      await axios.delete(`/api/cart/${id}`);
+      fetchCart();
+    } catch (error) {
+      console.error('刪除失敗:', error);
+    }
+  };
+
+  const checkout = async () => {
+    if (cartItems.length === 0) return;
+    
+    setCheckingOut(true);
+    try {
+      await axios.post('/api/orders');
+      alert('訂單創建成功！');
+      navigate('/orders');
+    } catch (error: any) {
+      alert(error.response?.data?.error || '下單失敗');
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
+  const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">加載中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">購物車</h1>
+
+      {cartItems.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-lg text-gray-500 mb-4">購物車是空的</p>
+          <button
+            onClick={() => navigate('/products')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md"
+          >
+            去購物
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white shadow rounded-lg">
+              {cartItems.map((item) => (
+                <div key={item.id} className="p-6 border-b border-gray-200 last:border-b-0">
+                  <div className="flex items-center">
+                    <img
+                      src={item.image_url || 'https://via.placeholder.com/100x100'}
+                      alt={item.name}
+                      className="w-24 h-24 object-cover rounded-md"
+                    />
+                    <div className="ml-4 flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+                      <p className="text-blue-600 font-bold">¥{item.price}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center border border-gray-300 rounded-md">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="px-3 py-1 hover:bg-gray-100"
+                        >
+                          -
+                        </button>
+                        <span className="px-4 py-1">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="px-3 py-1 hover:bg-gray-100"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <p className="text-lg font-semibold w-24 text-right">
+                        ¥{(item.price * item.quantity).toFixed(2)}
+                      </p>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="text-red-600 hover:text-red-700 ml-4"
+                      >
+                        刪除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <div className="bg-white shadow rounded-lg p-6 sticky top-4">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">訂單摘要</h2>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">小計</span>
+                  <span className="font-semibold">¥{total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">運費</span>
+                  <span className="font-semibold">免費</span>
+                </div>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="flex justify-between">
+                    <span className="text-lg font-bold">總計</span>
+                    <span className="text-lg font-bold text-blue-600">¥{total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={checkout}
+                disabled={checkingOut}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+              >
+                {checkingOut ? '處理中...' : '結算'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Cart;
