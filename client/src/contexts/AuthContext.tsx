@@ -97,25 +97,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      console.log('嘗試登入:', email);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Firebase 認證成功:', userCredential.user.uid);
       // onAuthStateChanged 會自動處理用戶狀態更新
     } catch (error: any) {
-      console.error('登錄失敗:', error);
-      throw new Error(error.message || '登錄失敗');
+      console.error('登錄失敗詳細信息:', {
+        code: error.code,
+        message: error.message,
+        email: email,
+        error: error
+      });
+      
+      // 提供更友好的錯誤訊息
+      let errorMessage = '登錄失敗';
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            errorMessage = '用戶不存在，請先註冊';
+            break;
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential':
+            errorMessage = '密碼錯誤';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = '郵箱格式不正確';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = '嘗試次數過多，請稍後再試';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = '網絡連接失敗，請檢查網絡';
+            break;
+          case 'auth/unauthorized-domain':
+            errorMessage = '域名未授權，請聯繫管理員';
+            break;
+          default:
+            errorMessage = error.message || '登錄失敗';
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 
   const register = async (username: string, email: string, password: string) => {
     try {
+      console.log('嘗試註冊:', { username, email });
       // 保存用戶名，以便在創建用戶文檔時使用
       setPendingUsername(username);
       // 創建 Firebase 用戶
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('Firebase 註冊成功:', userCredential.user.uid);
       // onAuthStateChanged 會自動處理用戶狀態更新
     } catch (error: any) {
       setPendingUsername(null);
-      console.error('註冊失敗:', error);
-      throw new Error(error.message || '註冊失敗');
+      console.error('註冊失敗詳細信息:', {
+        code: error.code,
+        message: error.message,
+        email: email,
+        error: error
+      });
+      
+      // 提供更友好的錯誤訊息
+      let errorMessage = '註冊失敗';
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = '該郵箱已被註冊';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = '郵箱格式不正確';
+            break;
+          case 'auth/weak-password':
+            errorMessage = '密碼強度不足，請使用至少6個字符';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = '網絡連接失敗，請檢查網絡';
+            break;
+          case 'auth/unauthorized-domain':
+            errorMessage = '域名未授權，請聯繫管理員';
+            break;
+          default:
+            errorMessage = error.message || '註冊失敗';
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
   };
 

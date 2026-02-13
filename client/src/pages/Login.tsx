@@ -19,7 +19,23 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || '登錄失敗');
+      // Firebase 錯誤處理
+      let errorMessage = '登錄失敗';
+      if (err.message) {
+        if (err.message.includes('auth/user-not-found')) {
+          errorMessage = '用戶不存在';
+        } else if (err.message.includes('auth/wrong-password') || err.message.includes('auth/invalid-credential')) {
+          errorMessage = '密碼錯誤';
+        } else if (err.message.includes('auth/invalid-email')) {
+          errorMessage = '郵箱格式不正確';
+        } else if (err.message.includes('auth/too-many-requests')) {
+          errorMessage = '嘗試次數過多，請稍後再試';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      setError(errorMessage);
+      console.error('登錄錯誤:', err);
     } finally {
       setLoading(false);
     }

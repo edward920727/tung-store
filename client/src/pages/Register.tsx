@@ -20,7 +20,21 @@ const Register = () => {
       await register(username, email, password);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || '註冊失敗');
+      // Firebase 錯誤處理
+      let errorMessage = '註冊失敗';
+      if (err.message) {
+        if (err.message.includes('auth/email-already-in-use')) {
+          errorMessage = '該郵箱已被註冊';
+        } else if (err.message.includes('auth/invalid-email')) {
+          errorMessage = '郵箱格式不正確';
+        } else if (err.message.includes('auth/weak-password')) {
+          errorMessage = '密碼強度不足，請使用至少6個字符';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      setError(errorMessage);
+      console.error('註冊錯誤:', err);
     } finally {
       setLoading(false);
     }
