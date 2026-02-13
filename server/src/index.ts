@@ -16,7 +16,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 中间件
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// 處理 OPTIONS 預檢請求
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,15 +43,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '小童服飾API運行正常' });
 });
 
-// 全局错误处理中间件
+// 404处理（必須在所有路由之後）
+app.use((req, res) => {
+  res.status(404).json({ error: '路由不存在', path: req.path, method: req.method });
+});
+
+// 全局错误处理中间件（必須在最後）
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('未處理的錯誤:', err);
   res.status(500).json({ error: '伺服器內部錯誤', message: process.env.NODE_ENV === 'development' ? err.message : undefined });
-});
-
-// 404处理
-app.use((req, res) => {
-  res.status(404).json({ error: '路由不存在' });
 });
 
 // 初始化数据库并启动服务器
