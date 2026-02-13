@@ -31,9 +31,10 @@ const Orders = () => {
   const fetchOrders = async () => {
     try {
       const response = await axios.get('/api/orders');
-      setOrders(response.data);
+      setOrders(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取訂單失敗:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -42,9 +43,14 @@ const Orders = () => {
   const fetchOrderDetail = async (id: number) => {
     try {
       const response = await axios.get(`/api/orders/${id}`);
-      setSelectedOrder(response.data);
+      const order = response.data;
+      if (order && order.items && !Array.isArray(order.items)) {
+        order.items = [];
+      }
+      setSelectedOrder(order);
     } catch (error) {
       console.error('獲取訂單詳情失敗:', error);
+      setSelectedOrder(null);
     }
   };
 
@@ -114,7 +120,7 @@ const Orders = () => {
                   </span>
                 </div>
               </div>
-              {selectedOrder && selectedOrder.id === order.id && selectedOrder.items && (
+              {selectedOrder && selectedOrder.id === order.id && selectedOrder.items && Array.isArray(selectedOrder.items) && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="font-semibold mb-2">訂單詳情:</h4>
                   <div className="space-y-2">

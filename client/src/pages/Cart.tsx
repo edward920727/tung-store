@@ -25,9 +25,10 @@ const Cart = () => {
   const fetchCart = async () => {
     try {
       const response = await axios.get('/api/cart');
-      setCartItems(response.data);
+      setCartItems(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取購物車失敗:', error);
+      setCartItems([]);
     } finally {
       setLoading(false);
     }

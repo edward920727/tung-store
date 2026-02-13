@@ -28,9 +28,10 @@ const Membership = () => {
   const fetchLevels = async () => {
     try {
       const response = await axios.get('/api/membership/levels');
-      setLevels(response.data);
+      setLevels(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取會員等級失敗:', error);
+      setLevels([]);
     }
   };
 

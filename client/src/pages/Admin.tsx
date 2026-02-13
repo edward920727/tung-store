@@ -129,9 +129,10 @@ const Admin = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/products');
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取商品失敗:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -141,9 +142,10 @@ const Admin = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/orders');
-      setOrders(response.data);
+      setOrders(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取訂單失敗:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -153,9 +155,10 @@ const Admin = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/coupons');
-      setCoupons(response.data);
+      setCoupons(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取優惠券失敗:', error);
+      setCoupons([]);
     } finally {
       setLoading(false);
     }
@@ -165,9 +168,10 @@ const Admin = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/membership/levels');
-      setMembershipLevels(response.data);
+      setMembershipLevels(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取會員等級失敗:', error);
+      setMembershipLevels([]);
     } finally {
       setLoading(false);
     }
@@ -177,9 +181,10 @@ const Admin = () => {
     setLoading(true);
     try {
       const response = await axios.get('/api/users');
-      setUsers(response.data);
+      setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取用戶列表失敗:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }

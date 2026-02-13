@@ -30,9 +30,10 @@ const Products = () => {
   const fetchCategories = async () => {
     try {
       const response = await axios.get('/api/products/categories/list');
-      setCategories(response.data);
+      setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取分類失敗:', error);
+      setCategories([]);
     }
   };
 
@@ -44,9 +45,10 @@ const Products = () => {
       if (searchTerm) params.search = searchTerm;
       
       const response = await axios.get('/api/products', { params });
-      setProducts(response.data);
+      setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('獲取商品失敗:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
