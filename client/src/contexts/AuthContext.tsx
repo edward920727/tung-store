@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
 
+// 設置 axios 的默認 baseURL
+if (API_BASE_URL) {
+  axios.defaults.baseURL = API_BASE_URL;
+}
+
 interface User {
   id: number;
   username: string;
@@ -44,9 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      if (API_BASE_URL) {
-        axios.defaults.baseURL = API_BASE_URL;
-      }
       fetchUser();
     } else {
       setLoading(false);
@@ -67,9 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
-    if (API_BASE_URL) {
-      axios.defaults.baseURL = API_BASE_URL;
-    }
     const response = await axios.post('/api/auth/login', { email, password });
     const { token: newToken, user: userData } = response.data;
     setToken(newToken);
@@ -79,9 +78,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (username: string, email: string, password: string) => {
-    if (API_BASE_URL) {
-      axios.defaults.baseURL = API_BASE_URL;
-    }
     const response = await axios.post('/api/auth/register', { username, email, password });
     const { token: newToken, user: userData } = response.data;
     setToken(newToken);
