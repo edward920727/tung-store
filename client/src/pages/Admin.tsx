@@ -1,8 +1,24 @@
 import { useState, useEffect } from 'react';
 import ImageCropper from '../components/ImageCropper';
-import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig } from '../services/firestore';
+import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig, uploadImage } from '../services/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableItem } from '../components/SortableItem';
 
 const Admin = () => {
   const { firebaseUser } = useAuth();
@@ -30,6 +46,7 @@ const Admin = () => {
     showFeatures: true,
     showGallery: true,
     featuredProductIds: [] as string[],
+    sectionOrder: ['hero', 'features', 'gallery'] as string[],
     features: [
       { title: '豐富商品', description: '瀏覽我們精心挑選的童裝，涵蓋各種款式、尺碼和風格', icon: '🛍️', imageUrl: '', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
       { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: '', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
@@ -193,6 +210,7 @@ const Admin = () => {
           showFeatures: config.showFeatures !== undefined ? config.showFeatures : true,
           showGallery: config.showGallery !== undefined ? config.showGallery : true,
           featuredProductIds: config.featuredProductIds || [],
+          sectionOrder: config.sectionOrder || ['hero', 'features', 'gallery'],
           features: config.features || homeConfigFormData.features,
         });
       }
@@ -220,6 +238,7 @@ const Admin = () => {
         showFeatures: homeConfigFormData.showFeatures,
         showGallery: homeConfigFormData.showGallery,
         featuredProductIds: homeConfigFormData.featuredProductIds,
+        sectionOrder: homeConfigFormData.sectionOrder,
         features: homeConfigFormData.features,
       };
 
@@ -234,6 +253,95 @@ const Admin = () => {
     } catch (error: any) {
       console.error('保存首頁配置失敗:', error);
       alert(error.message || '保存失敗');
+    }
+  };
+
+  // 拖拽處理函數
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 區塊順序拖拽
+  const handleSectionOrderDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = homeConfigFormData.sectionOrder.indexOf(active.id as string);
+      const newIndex = homeConfigFormData.sectionOrder.indexOf(over.id as string);
+      const newOrder = arrayMove(homeConfigFormData.sectionOrder, oldIndex, newIndex);
+      setHomeConfigFormData({ ...homeConfigFormData, sectionOrder: newOrder });
+      // 自動保存
+      handleAutoSave({ sectionOrder: newOrder });
+    }
+  };
+
+  // 精選商品順序拖拽
+  const handleFeaturedProductsDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = homeConfigFormData.featuredProductIds.indexOf(active.id as string);
+      const newIndex = homeConfigFormData.featuredProductIds.indexOf(over.id as string);
+      const newOrder = arrayMove(homeConfigFormData.featuredProductIds, oldIndex, newIndex);
+      setHomeConfigFormData({ ...homeConfigFormData, featuredProductIds: newOrder });
+      // 自動保存
+      handleAutoSave({ featuredProductIds: newOrder });
+    }
+  };
+
+  // 自動保存（拖拽後）
+  const handleAutoSave = async (updates: Partial<HomePageConfig>) => {
+    try {
+      if (homePageConfig) {
+        await firestoreService.updateHomePageConfig(updates);
+      }
+    } catch (error) {
+      console.error('自動保存失敗:', error);
+    }
+  };
+
+  // 圖片拖拽上傳處理
+  const handleImageDrop = async (e: React.DragEvent<HTMLDivElement>, type: 'hero' | 'feature') => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        try {
+          const path = `homepage/${type}/${Date.now()}_${file.name}`;
+          const url = await uploadImage(file, path);
+          if (type === 'hero') {
+            setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: url });
+          }
+          alert('圖片上傳成功！');
+        } catch (error: any) {
+          alert('圖片上傳失敗: ' + (error.message || '未知錯誤'));
+        }
+      } else {
+        alert('請上傳圖片文件');
+      }
+    }
+  };
+
+  const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'hero' | 'feature') => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        try {
+          const path = `homepage/${type}/${Date.now()}_${file.name}`;
+          const url = await uploadImage(file, path);
+          if (type === 'hero') {
+            setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: url });
+          }
+          alert('圖片上傳成功！');
+        } catch (error: any) {
+          alert('圖片上傳失敗: ' + (error.message || '未知錯誤'));
+        }
+      } else {
+        alert('請上傳圖片文件');
+      }
     }
   };
 
@@ -1459,24 +1567,52 @@ const Admin = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">背景圖片 URL</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">背景圖片</label>
+                    {/* 拖拽上傳區域 */}
+                    <div
+                      onDrop={(e) => handleImageDrop(e, 'hero')}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDragEnter={(e) => e.preventDefault()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pink-500 transition-colors cursor-pointer"
+                      onClick={() => document.getElementById('hero-image-upload')?.click()}
+                    >
+                      <input
+                        id="hero-image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageFileSelect(e, 'hero')}
+                      />
+                      {homeConfigFormData.heroBackgroundImage ? (
+                        <div>
+                          <img
+                            src={homeConfigFormData.heroBackgroundImage}
+                            alt="預覽"
+                            className="w-full h-48 object-cover rounded-md mb-2"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                          <p className="text-sm text-gray-600">點擊或拖拽圖片到此處更換</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="mt-2 text-sm text-gray-600">拖拽圖片到此處或點擊上傳</p>
+                          <p className="text-xs text-gray-500 mt-1">支持 JPG、PNG、GIF 格式</p>
+                        </div>
+                      )}
+                    </div>
+                    {/* 也可以手動輸入 URL */}
                     <input
                       type="url"
                       value={homeConfigFormData.heroBackgroundImage}
                       onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="https://images.unsplash.com/..."
+                      className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      placeholder="或直接輸入圖片 URL"
                     />
-                    {homeConfigFormData.heroBackgroundImage && (
-                      <img
-                        src={homeConfigFormData.heroBackgroundImage}
-                        alt="預覽"
-                        className="mt-2 w-full h-48 object-cover rounded-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    )}
                   </div>
                 </div>
               </div>
@@ -1595,62 +1731,155 @@ const Admin = () => {
                 </div>
               </div>
 
+              {/* 區塊順序設置 */}
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">區塊順序</h3>
+                <p className="text-sm text-gray-600 mb-4">拖拽調整首頁區塊的顯示順序</p>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleSectionOrderDragEnd}
+                >
+                  <SortableContext
+                    items={homeConfigFormData.sectionOrder}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {homeConfigFormData.sectionOrder.map((sectionId) => {
+                        const sectionNames: Record<string, string> = {
+                          hero: 'Hero 區域',
+                          features: '特色區塊',
+                          gallery: '精選商品',
+                        };
+                        return (
+                          <SortableItem key={sectionId} id={sectionId}>
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-pink-300 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                </svg>
+                                <span className="font-medium text-gray-900">{sectionNames[sectionId] || sectionId}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">拖拽調整順序</span>
+                            </div>
+                          </SortableItem>
+                        );
+                      })}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+
               {/* 精選商品設置 */}
               <div className="bg-white shadow-lg rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">精選商品</h3>
-                <p className="text-sm text-gray-600 mb-4">選擇要在首頁展示的商品（最多 8 個）</p>
+                <p className="text-sm text-gray-600 mb-4">選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序</p>
                 {products.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">暫無商品，請先添加商品</p>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                      {products.map((product) => (
-                        <label
-                          key={product.id}
-                          className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                            homeConfigFormData.featuredProductIds.includes(product.id)
-                              ? 'border-pink-500 bg-pink-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                    {/* 已選擇的商品（可拖拽排序） */}
+                    {homeConfigFormData.featuredProductIds.length > 0 && (
+                      <div className="mb-6">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">已選擇的商品（拖拽調整順序）</h4>
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleFeaturedProductsDragEnd}
                         >
-                          <input
-                            type="checkbox"
-                            checked={homeConfigFormData.featuredProductIds.includes(product.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                if (homeConfigFormData.featuredProductIds.length < 8) {
-                                  setHomeConfigFormData({
-                                    ...homeConfigFormData,
-                                    featuredProductIds: [...homeConfigFormData.featuredProductIds, product.id],
-                                  });
-                                } else {
-                                  alert('最多只能選擇 8 個精選商品');
-                                }
-                              } else {
-                                setHomeConfigFormData({
-                                  ...homeConfigFormData,
-                                  featuredProductIds: homeConfigFormData.featuredProductIds.filter(id => id !== product.id),
-                                });
-                              }
-                            }}
-                            className="mr-3"
-                          />
-                          <img
-                            src={product.image_url || 'https://via.placeholder.com/50x50'}
-                            alt={product.name}
-                            className="w-12 h-12 object-cover rounded mr-3"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                            <p className="text-xs text-gray-500">¥{product.price}</p>
-                          </div>
-                        </label>
-                      ))}
+                          <SortableContext
+                            items={homeConfigFormData.featuredProductIds}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-2">
+                              {homeConfigFormData.featuredProductIds.map((productId) => {
+                                const product = products.find(p => p.id === productId);
+                                if (!product) return null;
+                                return (
+                                  <SortableItem key={productId} id={productId}>
+                                    <div className="flex items-center p-3 bg-pink-50 border-2 border-pink-300 rounded-lg">
+                                      <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                      </svg>
+                                      <img
+                                        src={product.image_url || 'https://via.placeholder.com/50x50'}
+                                        alt={product.name}
+                                        className="w-12 h-12 object-cover rounded mr-3"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                                        <p className="text-xs text-gray-500">¥{product.price}</p>
+                                      </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setHomeConfigFormData({
+                                            ...homeConfigFormData,
+                                            featuredProductIds: homeConfigFormData.featuredProductIds.filter(id => id !== productId),
+                                          });
+                                        }}
+                                        className="ml-2 text-red-600 hover:text-red-800"
+                                      >
+                                        移除
+                                      </button>
+                                    </div>
+                                  </SortableItem>
+                                );
+                              })}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
+                      </div>
+                    )}
+
+                    {/* 可選擇的商品列表 */}
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">選擇商品</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                        {products
+                          .filter(p => !homeConfigFormData.featuredProductIds.includes(p.id))
+                          .map((product) => (
+                            <label
+                              key={product.id}
+                              className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={false}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    if (homeConfigFormData.featuredProductIds.length < 8) {
+                                      setHomeConfigFormData({
+                                        ...homeConfigFormData,
+                                        featuredProductIds: [...homeConfigFormData.featuredProductIds, product.id],
+                                      });
+                                    } else {
+                                      alert('最多只能選擇 8 個精選商品');
+                                    }
+                                  }
+                                }}
+                                className="mr-3"
+                              />
+                              <img
+                                src={product.image_url || 'https://via.placeholder.com/50x50'}
+                                alt={product.name}
+                                className="w-12 h-12 object-cover rounded mr-3"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                                <p className="text-xs text-gray-500">¥{product.price}</p>
+                              </div>
+                            </label>
+                          ))}
+                      </div>
                     </div>
+
                     {homeConfigFormData.featuredProductIds.length > 0 && (
                       <div className="mt-4 p-3 bg-blue-50 rounded-md">
                         <p className="text-sm text-blue-800">
-                          已選擇 {homeConfigFormData.featuredProductIds.length} 個商品
+                          已選擇 {homeConfigFormData.featuredProductIds.length} 個商品（可拖拽調整順序）
                         </p>
                       </div>
                     )}

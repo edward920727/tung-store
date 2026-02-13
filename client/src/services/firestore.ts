@@ -13,7 +13,8 @@ import {
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
 
 // 數據模型接口
 export interface User {
@@ -111,12 +112,15 @@ export interface HomePageConfig {
   gradientTo: string; // 漸變結束色
   
   // 精選商品
-  featuredProductIds: string[]; // 精選商品 ID 列表
+  featuredProductIds: string[]; // 精選商品 ID 列表（已排序）
   
   // 布局選項
   layout: 'default' | 'compact' | 'wide'; // 布局類型
   showFeatures: boolean; // 是否顯示特色區塊
   showGallery: boolean; // 是否顯示畫廊
+  
+  // 區塊順序
+  sectionOrder: string[]; // 區塊順序，例如：['hero', 'features', 'gallery']
   
   // 特色區塊
   features: Array<{
@@ -493,3 +497,26 @@ class FirestoreService {
 }
 
 export const firestoreService = new FirestoreService();
+
+// ========== Firebase Storage 圖片上傳 ==========
+export const uploadImage = async (file: File, path: string): Promise<string> => {
+  try {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('圖片上傳失敗:', error);
+    throw error;
+  }
+};
+
+export const deleteImage = async (path: string): Promise<void> => {
+  try {
+    const storageRef = ref(storage, path);
+    await deleteObject(storageRef);
+  } catch (error) {
+    console.error('圖片刪除失敗:', error);
+    throw error;
+  }
+};
