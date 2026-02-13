@@ -110,7 +110,7 @@ const Products = () => {
                 <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-pink-600 transition-colors">{product.name}</h3>
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">¥{product.price}</span>
+                  <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">NT${product.price}</span>
                   <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">庫存: {product.stock}</span>
                 </div>
               </div>

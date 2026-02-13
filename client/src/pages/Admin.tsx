@@ -834,7 +834,7 @@ const Admin = () => {
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥{product.price}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">NT${product.price}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.stock}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -883,7 +883,7 @@ const Admin = () => {
                     <tr key={order.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.id.slice(0, 8)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_id.slice(0, 8)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">¥{order.total_amount.toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">NT${order.total_amount.toFixed(2)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -981,7 +981,7 @@ const Admin = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      折扣值 * {couponFormData.discount_type === 'percentage' ? '(%)' : '(¥)'}
+                      折扣值 * {couponFormData.discount_type === 'percentage' ? '(%)' : '(NT$)'}
                     </label>
                     <input
                       type="number"
@@ -994,7 +994,7 @@ const Admin = () => {
                   </div>
                   {couponFormData.discount_type === 'percentage' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">最高折扣金額 (¥)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">最高折扣金額 (NT$)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -1005,7 +1005,7 @@ const Admin = () => {
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">最低消費金額 (¥)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">最低消費金額 (NT$)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -1116,9 +1116,9 @@ const Admin = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {coupon.discount_type === 'percentage' 
                             ? `${coupon.discount_value}%` 
-                            : `¥${coupon.discount_value}`}
+                            : `NT$${coupon.discount_value}`}
                           {coupon.max_discount && coupon.discount_type === 'percentage' && (
-                            <span className="text-xs text-gray-500"> (最高¥{coupon.max_discount})</span>
+                            <span className="text-xs text-gray-500"> (最高NT${coupon.max_discount})</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1808,7 +1808,7 @@ const Admin = () => {
                                       />
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                                        <p className="text-xs text-gray-500">¥{product.price}</p>
+                                        <p className="text-xs text-gray-500">NT${product.price}</p>
                                       </div>
                                       <button
                                         onClick={(e) => {
@@ -1869,7 +1869,7 @@ const Admin = () => {
                               />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                                <p className="text-xs text-gray-500">¥{product.price}</p>
+                                <p className="text-xs text-gray-500">NT${product.price}</p>
                               </div>
                             </label>
                           ))}

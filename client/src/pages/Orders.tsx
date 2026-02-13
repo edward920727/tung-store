@@ -120,7 +120,7 @@ const Orders = () => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-blue-600">¥{order.total_amount.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-blue-600">NT${order.total_amount.toFixed(2)}</p>
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mt-2 ${getStatusColor(order.status)}`}>
                     {getStatusText(order.status)}
                   </span>
@@ -133,7 +133,7 @@ const Orders = () => {
                     {selectedOrder.items.map((item, index) => (
                       <div key={item.id || index} className="flex justify-between text-sm">
                         <span>{item.name || '商品'} x {item.quantity}</span>
-                        <span>¥{(item.price * item.quantity).toFixed(2)}</span>
+                        <span>NT${(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

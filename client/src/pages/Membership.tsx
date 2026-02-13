@@ -94,7 +94,7 @@ const Membership = () => {
         </div>
         <div className="bg-white shadow-lg rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">累計消費</h3>
-          <p className="text-3xl font-bold text-green-600">¥{(userData.total_spent || 0).toFixed(2)}</p>
+          <p className="text-3xl font-bold text-green-600">NT${(userData.total_spent || 0).toFixed(2)}</p>
         </div>
         <div className="bg-white shadow-lg rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">會員折扣</h3>

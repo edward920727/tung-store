@@ -77,7 +77,7 @@ const ProductDetail = () => {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
-          <p className="text-2xl font-bold text-blue-600 mb-4">¥{product.price}</p>
+          <p className="text-2xl font-bold text-blue-600 mb-4">NT${product.price}</p>
           <p className="text-gray-600 mb-4">{product.description}</p>
           <div className="mb-4">
             <span className="text-sm text-gray-500">分類: </span>

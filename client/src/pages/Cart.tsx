@@ -148,7 +148,7 @@ const Cart = () => {
                     />
                     <div className="ml-4 flex-1">
                       <h3 className="text-lg font-semibold text-gray-900">{item.product?.name || '商品'}</h3>
-                      <p className="text-blue-600 font-bold">¥{item.product?.price || 0}</p>
+                      <p className="text-blue-600 font-bold">NT${item.product?.price || 0}</p>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center border border-gray-300 rounded-md">
@@ -167,7 +167,7 @@ const Cart = () => {
                         </button>
                       </div>
                       <p className="text-lg font-semibold w-24 text-right">
-                        ¥{((item.product?.price || 0) * item.quantity).toFixed(2)}
+                        NT${((item.product?.price || 0) * item.quantity).toFixed(2)}
                       </p>
                       <button
                         onClick={() => removeItem(item.id)}
@@ -187,7 +187,7 @@ const Cart = () => {
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">小計</span>
-                  <span className="font-semibold">¥{total.toFixed(2)}</span>
+                  <span className="font-semibold">NT${total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">運費</span>
@@ -196,7 +196,7 @@ const Cart = () => {
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between">
                     <span className="text-lg font-bold">總計</span>
-                    <span className="text-lg font-bold text-blue-600">¥{total.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-blue-600">NT${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
