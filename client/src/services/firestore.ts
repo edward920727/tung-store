@@ -329,10 +329,22 @@ class FirestoreService {
     })) as MembershipLevel[];
   }
 
-  async getMembershipLevel(levelId: string): Promise<MembershipLevel | null> {
-    const levelDoc = await getDoc(doc(db, 'membership_levels', levelId));
-    if (!levelDoc.exists()) return null;
-    return { id: levelDoc.id, ...levelDoc.data() } as MembershipLevel;
+  async getMembershipLevel(levelId: string | null | undefined): Promise<MembershipLevel | null> {
+    if (!levelId) {
+      console.warn('getMembershipLevel: levelId 為空', levelId);
+      return null;
+    }
+    try {
+      const levelDoc = await getDoc(doc(db, 'membership_levels', levelId));
+      if (!levelDoc.exists()) {
+        console.warn('getMembershipLevel: 找不到會員等級，ID:', levelId);
+        return null;
+      }
+      return { id: levelDoc.id, ...levelDoc.data() } as MembershipLevel;
+    } catch (error) {
+      console.error('getMembershipLevel 錯誤:', error, 'levelId:', levelId);
+      return null;
+    }
   }
 
   async getUserMembership(userId: string): Promise<{
@@ -341,7 +353,22 @@ class FirestoreService {
   } | null> {
     const user = await this.getUser(userId);
     if (!user) return null;
-    const membership = await this.getMembershipLevel(user.membership_level_id);
+    
+    let membership = null;
+    if (user.membership_level_id) {
+      membership = await this.getMembershipLevel(user.membership_level_id);
+    }
+    
+    // 如果沒有會員等級，獲取默認等級
+    if (!membership) {
+      const defaultLevels = await this.getMembershipLevels();
+      if (defaultLevels.length > 0) {
+        membership = defaultLevels[0];
+        // 更新用戶的會員等級 ID
+        await this.updateUser(userId, { membership_level_id: defaultLevels[0].id });
+      }
+    }
+    
     if (!membership) return null;
     return { user, membership };
   }

@@ -64,13 +64,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('獲取到的用戶數據:', userData);
           if (userData) {
             // 獲取會員等級信息並添加到用戶對象
-            const membership = await firestoreService.getMembershipLevel(userData.membership_level_id);
+            let membership = null;
+            if (userData.membership_level_id) {
+              try {
+                membership = await firestoreService.getMembershipLevel(userData.membership_level_id);
+              } catch (error) {
+                console.error('獲取會員等級失敗:', error);
+                // 如果會員等級 ID 無效，嘗試獲取默認等級
+                const defaultLevels = await firestoreService.getMembershipLevels();
+                if (defaultLevels.length > 0) {
+                  // 更新用戶的會員等級 ID
+                  await firestoreService.updateUser(userData.id, { 
+                    membership_level_id: defaultLevels[0].id 
+                  });
+                  membership = defaultLevels[0];
+                }
+              }
+            } else {
+              // 如果沒有會員等級 ID，獲取默認等級並更新用戶
+              console.log('用戶沒有會員等級 ID，設置默認等級');
+              const defaultLevels = await firestoreService.getMembershipLevels();
+              if (defaultLevels.length > 0) {
+                await firestoreService.updateUser(userData.id, { 
+                  membership_level_id: defaultLevels[0].id 
+                });
+                membership = defaultLevels[0];
+              }
+            }
+            
             const userWithMembership: User = {
               ...userData,
               icon: membership?.icon,
               color: membership?.color,
               membership_name: membership?.name,
             };
+            console.log('設置用戶數據（含會員信息）:', userWithMembership);
             setUser(userWithMembership);
             setPendingUsername(null); // 清除待處理的用戶名
           } else {
@@ -106,7 +134,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const createdUser = await firestoreService.getUser(firebaseUser.uid);
               console.log('創建後的用戶數據:', createdUser);
               if (createdUser) {
-                const membership = await firestoreService.getMembershipLevel(createdUser.membership_level_id);
+                let membership = null;
+                if (createdUser.membership_level_id) {
+                  try {
+                    membership = await firestoreService.getMembershipLevel(createdUser.membership_level_id);
+                  } catch (error) {
+                    console.error('獲取會員等級失敗:', error);
+                    const defaultLevels = await firestoreService.getMembershipLevels();
+                    if (defaultLevels.length > 0) {
+                      membership = defaultLevels[0];
+                    }
+                  }
+                } else {
+                  const defaultLevels = await firestoreService.getMembershipLevels();
+                  if (defaultLevels.length > 0) {
+                    membership = defaultLevels[0];
+                  }
+                }
+                
                 const userWithMembership: User = {
                   ...createdUser,
                   icon: membership?.icon,
@@ -257,7 +302,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userData) {
         console.log('獲取到的用戶數據:', userData);
         // 獲取會員等級信息並添加到用戶對象
-        const membership = await firestoreService.getMembershipLevel(userData.membership_level_id);
+        let membership = null;
+        if (userData.membership_level_id) {
+          try {
+            membership = await firestoreService.getMembershipLevel(userData.membership_level_id);
+          } catch (error) {
+            console.error('獲取會員等級失敗:', error);
+            const defaultLevels = await firestoreService.getMembershipLevels();
+            if (defaultLevels.length > 0) {
+              membership = defaultLevels[0];
+            }
+          }
+        } else {
+          const defaultLevels = await firestoreService.getMembershipLevels();
+          if (defaultLevels.length > 0) {
+            membership = defaultLevels[0];
+          }
+        }
+        
         const userWithMembership: User = {
           ...userData,
           icon: membership?.icon,
