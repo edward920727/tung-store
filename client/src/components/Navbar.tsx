@@ -1,14 +1,34 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, loading } = useAuth();
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // 調試：檢查用戶角色
-  console.log('Navbar - 當前用戶:', user);
-  console.log('Navbar - 用戶角色:', user?.role);
-  console.log('Navbar - 是否為管理員:', user?.role === 'admin');
+  // 監聽用戶狀態變化
+  useEffect(() => {
+    if (user) {
+      const adminStatus = user.role === 'admin';
+      setIsAdmin(adminStatus);
+      console.log('Navbar - 用戶狀態更新:', {
+        user,
+        role: user.role,
+        isAdmin: adminStatus,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      setIsAdmin(false);
+      console.log('Navbar - 用戶為 null');
+    }
+  }, [user]);
+
+  // 調試：檢查用戶角色（每次渲染時）
+  console.log('Navbar 渲染 - 當前用戶:', user);
+  console.log('Navbar 渲染 - 用戶角色:', user?.role);
+  console.log('Navbar 渲染 - 是否為管理員:', isAdmin);
+  console.log('Navbar 渲染 - Loading:', loading);
 
   const handleLogout = () => {
     logout();
@@ -61,7 +81,7 @@ const Navbar = () => {
                   >
                     我的會員
                   </Link>
-                  {user.role === 'admin' && (
+                  {(isAdmin || user.role === 'admin') && (
                     <Link
                       to="/admin"
                       className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-blue-600"
@@ -96,7 +116,7 @@ const Navbar = () => {
                     )}
                   </div>
                 </div>
-                {user.role !== 'admin' && (
+                {!isAdmin && user.role !== 'admin' && (
                   <button
                     onClick={handleRefresh}
                     className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"

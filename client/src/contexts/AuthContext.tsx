@@ -239,11 +239,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshUser = async () => {
-    if (!firebaseUser) return;
+    if (!firebaseUser) {
+      console.log('刷新失敗：沒有 Firebase 用戶');
+      return;
+    }
     
     try {
-      console.log('刷新用戶數據...');
-      const userData = await firestoreService.getUser(firebaseUser.uid);
+      console.log('刷新用戶數據，UID:', firebaseUser.uid);
+      let userData = await firestoreService.getUser(firebaseUser.uid);
+      
+      // 如果通過 UID 找不到，嘗試通過 email 查找
+      if (!userData && firebaseUser.email) {
+        console.log('通過 UID 找不到，嘗試通過 email 查找:', firebaseUser.email);
+        userData = await firestoreService.getUserByEmail(firebaseUser.email);
+      }
+      
       if (userData) {
         console.log('獲取到的用戶數據:', userData);
         // 獲取會員等級信息並添加到用戶對象
@@ -255,7 +265,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           membership_name: membership?.name,
         };
         console.log('更新後的用戶數據:', userWithMembership);
+        console.log('用戶角色:', userWithMembership.role, '是否為管理員:', userWithMembership.role === 'admin');
         setUser(userWithMembership);
+      } else {
+        console.error('刷新失敗：找不到用戶數據');
       }
     } catch (error) {
       console.error('刷新用戶數據失敗:', error);
