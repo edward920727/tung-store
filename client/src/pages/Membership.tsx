@@ -50,7 +50,6 @@ const Membership = () => {
     );
   }
 
-  const currentLevel = levels.find(l => l.id === membershipInfo.membership_level_id);
   const nextLevel = levels.find(l => l.min_points > membershipInfo.points);
 
   return (
@@ -131,7 +130,7 @@ const Membership = () => {
               }`}
               style={{
                 borderColor: level.color,
-                ringColor: level.color
+                ...(level.id === membershipInfo.membership_level_id ? { '--tw-ring-color': level.color } as React.CSSProperties : {})
               }}
             >
               <div className="flex items-center gap-2 mb-2">
