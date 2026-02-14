@@ -1,10 +1,11 @@
-import { useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
 
 interface CollapsibleSectionProps {
   id: string;
   title: string;
   description?: string;
-  defaultOpen?: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
   children: ReactNode;
   icon?: string;
 }
@@ -13,16 +14,15 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   id,
   title,
   description,
-  defaultOpen = false,
+  isOpen,
+  onToggle,
   children,
   icon,
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
   return (
     <div id={id} className="bg-white shadow-lg rounded-lg overflow-hidden">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onToggle}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
         aria-expanded={isOpen}
       >

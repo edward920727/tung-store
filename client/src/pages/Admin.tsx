@@ -119,6 +119,7 @@ const Admin = () => {
   const [importing, setImporting] = useState(false);
   const [showImportButton, setShowImportButton] = useState(false);
   const [activeHomepageSection, setActiveHomepageSection] = useState<string>('hero');
+  const [openHomepageSection, setOpenHomepageSection] = useState<string | null>('hero');
   
   // 首頁配置相關狀態
   const [homePageConfig, setHomePageConfig] = useState<HomePageConfig | null>(null);
@@ -1928,6 +1929,7 @@ const Admin = () => {
                     key={item.id}
                     onClick={() => {
                       setActiveHomepageSection(item.id);
+                      setOpenHomepageSection(item.id);
                       // 滾動到對應區塊
                       setTimeout(() => {
                         const element = document.getElementById(`section-${item.id}`);
@@ -1962,7 +1964,8 @@ const Admin = () => {
                   title="Hero 區域設置"
                   description="設置首頁 Hero 區域的標題、背景圖和輪播功能"
                   icon="🎯"
-                  defaultOpen={activeHomepageSection === 'hero'}
+                  isOpen={openHomepageSection === 'hero'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'hero' ? null : 'hero')}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2201,7 +2204,8 @@ const Admin = () => {
                   title="顏色主題"
                   description="設置網站的主色調和漸變顏色"
                   icon="🎨"
-                  defaultOpen={activeHomepageSection === 'colors'}
+                  isOpen={openHomepageSection === 'colors'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'colors' ? null : 'colors')}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2281,7 +2285,8 @@ const Admin = () => {
                   title="布局設置"
                   description="設置首頁布局類型和顯示選項"
                   icon="📐"
-                  defaultOpen={activeHomepageSection === 'layout'}
+                  isOpen={openHomepageSection === 'layout'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'layout' ? null : 'layout')}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2325,7 +2330,8 @@ const Admin = () => {
                   title="特色區塊管理"
                   description="自定義首頁特色區塊的內容、圖標和樣式"
                   icon="⭐"
-                  defaultOpen={activeHomepageSection === 'features'}
+                  isOpen={openHomepageSection === 'features'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'features' ? null : 'features')}
                 >
                   <div>
                     <div className="flex justify-end mb-4">
@@ -2594,7 +2600,8 @@ const Admin = () => {
                   title="區塊順序"
                   description="拖拽調整首頁區塊的顯示順序"
                   icon="📋"
-                  defaultOpen={activeHomepageSection === 'sections'}
+                  isOpen={openHomepageSection === 'sections'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'sections' ? null : 'sections')}
                 >
                   <div>
                 <DndContext
@@ -2647,7 +2654,8 @@ const Admin = () => {
                   title="精選商品"
                   description="選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序"
                   icon="🛍️"
-                  defaultOpen={activeHomepageSection === 'products'}
+                  isOpen={openHomepageSection === 'products'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'products' ? null : 'products')}
                 >
                   <div>
                 {products.length === 0 ? (
@@ -2813,7 +2821,8 @@ const Admin = () => {
                   title="自訂區塊管理"
                   description="新增和管理自訂首頁區塊"
                   icon="🧩"
-                  defaultOpen={activeHomepageSection === 'custom'}
+                  isOpen={openHomepageSection === 'custom'}
+                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'custom' ? null : 'custom')}
                 >
                   <div>
                     <div className="flex justify-end mb-4">
