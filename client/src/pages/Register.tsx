@@ -10,10 +10,65 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const validateUsername = (username: string) => {
+    if (!username) {
+      setUsernameError('請輸入用戶名');
+      return false;
+    }
+    if (username.length < 3) {
+      setUsernameError('用戶名至少需要3個字符');
+      return false;
+    }
+    setUsernameError('');
+    return true;
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError('請輸入郵箱');
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError('郵箱格式不正確');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError('請輸入密碼');
+      return false;
+    }
+    if (password.length < 6) {
+      setPasswordError('密碼至少需要6個字符');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setUsernameError('');
+    setEmailError('');
+    setPasswordError('');
+
+    const isUsernameValid = validateUsername(username);
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isUsernameValid || !isEmailValid || !isPasswordValid) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -57,10 +112,23 @@ const Register = () => {
             <input
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (usernameError) validateUsername(e.target.value);
+              }}
+              onBlur={(e) => validateUsername(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                usernameError ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!usernameError}
+              aria-describedby={usernameError ? 'username-error' : undefined}
             />
+            {usernameError && (
+              <p id="username-error" className="mt-1 text-sm text-red-600" role="alert">
+                {usernameError}
+              </p>
+            )}
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -69,10 +137,23 @@ const Register = () => {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (emailError) validateEmail(e.target.value);
+              }}
+              onBlur={(e) => validateEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                emailError ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!emailError}
+              aria-describedby={emailError ? 'email-error' : undefined}
             />
+            {emailError && (
+              <p id="email-error" className="mt-1 text-sm text-red-600" role="alert">
+                {emailError}
+              </p>
+            )}
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -81,11 +162,25 @@ const Register = () => {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (passwordError) validatePassword(e.target.value);
+              }}
+              onBlur={(e) => validatePassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                passwordError ? 'border-red-500' : 'border-gray-300'
+              }`}
+              aria-invalid={!!passwordError}
+              aria-describedby={passwordError ? 'password-error' : undefined}
             />
+            {passwordError && (
+              <p id="password-error" className="mt-1 text-sm text-red-600" role="alert">
+                {passwordError}
+              </p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">密碼至少需要6個字符</p>
           </div>
           <button
             type="submit"

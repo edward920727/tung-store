@@ -542,6 +542,53 @@ class FirestoreService {
       updated_at: serverTimestamp(),
     });
   }
+
+  // ========== 收藏相關 ==========
+  async getFavorites(userId: string): Promise<string[]> {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) return [];
+    const userData = userDoc.data();
+    return userData.favorites || [];
+  }
+
+  async addToFavorites(userId: string, productId: string): Promise<void> {
+    const favorites = await this.getFavorites(userId);
+    if (!favorites.includes(productId)) {
+      await updateDoc(doc(db, 'users', userId), {
+        favorites: [...favorites, productId],
+      });
+    }
+  }
+
+  async removeFromFavorites(userId: string, productId: string): Promise<void> {
+    const favorites = await this.getFavorites(userId);
+    await updateDoc(doc(db, 'users', userId), {
+      favorites: favorites.filter((id: string) => id !== productId),
+    });
+  }
+
+  async isFavorite(userId: string, productId: string): Promise<boolean> {
+    const favorites = await this.getFavorites(userId);
+    return favorites.includes(productId);
+  }
+
+  async getFavoriteProducts(userId: string): Promise<Product[]> {
+    const favorites = await this.getFavorites(userId);
+    if (favorites.length === 0) return [];
+    
+    const products = await Promise.all(
+      favorites.map(async (productId) => {
+        try {
+          return await this.getProduct(productId);
+        } catch (error) {
+          console.warn(`無法獲取收藏商品 ${productId}:`, error);
+          return null;
+        }
+      })
+    );
+    
+    return products.filter((p): p is Product => p !== null);
+  }
 }
 
 export const firestoreService = new FirestoreService();

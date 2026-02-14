@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { firestoreService, HomePageConfig, Product, CustomBlock } from '../services/firestore';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 const Home = () => {
   const [config, setConfig] = useState<HomePageConfig | null>(null);

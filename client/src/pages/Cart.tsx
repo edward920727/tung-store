@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { firestoreService, CartItem, OrderItem } from '../services/firestore';
+import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/Toast';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -9,6 +12,7 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
+  const { toasts, success, error, removeToast } = useToast();
 
   useEffect(() => {
     if (firebaseUser) {
@@ -48,7 +52,7 @@ const Cart = () => {
       fetchCart();
     } catch (error: any) {
       console.error('更新購物車失敗:', error);
-      alert(error.message || '更新失敗，請稍後再試');
+      error(error.message || '更新失敗，請稍後再試');
     }
   };
 
@@ -65,7 +69,7 @@ const Cart = () => {
       fetchCart();
     } catch (error) {
       console.error('刪除失敗:', error);
-      alert('刪除失敗，請稍後再試');
+      error('刪除失敗，請稍後再試');
     }
   };
 
@@ -128,11 +132,13 @@ const Cart = () => {
       // 清空購物車
       await firestoreService.clearCart(firebaseUser.uid);
 
-      alert('訂單創建成功！');
-      navigate('/orders');
+      success('訂單創建成功！');
+      setTimeout(() => {
+        navigate('/orders');
+      }, 1000);
     } catch (error: any) {
       console.error('下單失敗:', error);
-      alert(error.message || '下單失敗，請稍後再試');
+      error(error.message || '下單失敗，請稍後再試');
     } finally {
       setCheckingOut(false);
     }
@@ -148,7 +154,7 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">加載中...</div>
+        <SkeletonLoader type="card" count={3} />
       </div>
     );
   }
@@ -170,8 +176,10 @@ const Cart = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">購物車</h1>
+    <>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">購物車</h1>
 
       {cartItems.length === 0 ? (
         <div className="text-center py-12">
@@ -260,7 +268,8 @@ const Cart = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
