@@ -1127,7 +1127,7 @@ const Admin = () => {
                           {order.items && order.items.length > 0 && (
                             <button
                               onClick={() => {
-                                const itemsList = order.items.map((item, idx) => 
+                                const itemsList = order.items.map((item) => 
                                   `  ${item.name || '商品'} x ${item.quantity} = NT$${(item.price * item.quantity).toFixed(2)}`
                                 ).join('\n');
                                 alert(`訂單詳情：\n\n${itemsList}\n\n總計：NT$${order.total_amount.toFixed(2)}`);

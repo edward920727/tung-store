@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { firestoreService, HomePageConfig, Product, CustomBlock } from '../services/firestore';
-import { SkeletonLoader } from '../components/SkeletonLoader';
 
 const Home = () => {
   const [config, setConfig] = useState<HomePageConfig | null>(null);
@@ -122,8 +121,6 @@ const Home = () => {
   const renderHero = () => {
     // 如果啟用輪播且有圖片，顯示輪播
     if (heroCarouselEnabled && heroCarouselImages.length > 0) {
-      const currentImage = heroCarouselImages[currentCarouselIndex] || heroCarouselImages[0];
-      
       return (
         <div className="relative h-screen overflow-hidden">
           {/* 輪播圖片容器 */}

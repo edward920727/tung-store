@@ -16,7 +16,7 @@ const ProductDetail = () => {
   const [adding, setAdding] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
-  const { toasts, success, error, removeToast } = useToast();
+  const { toasts, success, error: showError, removeToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -78,9 +78,9 @@ const ProductDetail = () => {
         setIsFavorite(true);
         success('已添加到收藏');
       }
-    } catch (error: any) {
-      console.error('收藏操作失敗:', error);
-      error('操作失敗，請稍後再試');
+    } catch (err: any) {
+      console.error('收藏操作失敗:', err);
+      showError('操作失敗，請稍後再試');
     } finally {
       setFavoriteLoading(false);
     }
@@ -113,9 +113,9 @@ const ProductDetail = () => {
     try {
       await firestoreService.addToCart(firebaseUser.uid, product.id, quantity);
       success('商品已添加到購物車！');
-    } catch (error: any) {
-      console.error('添加到購物車失敗:', error);
-      error(error.message || '添加失敗，請稍後再試');
+    } catch (err: any) {
+      console.error('添加到購物車失敗:', err);
+      showError(err.message || '添加失敗，請稍後再試');
     } finally {
       setAdding(false);
     }

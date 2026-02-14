@@ -351,16 +351,41 @@ class FirestoreService {
 
   // ========== 訂單相關 ==========
   async getOrders(userId: string): Promise<Order[]> {
-    const q = query(
-      collection(db, 'orders'),
-      where('user_id', '==', userId),
-      orderBy('created_at', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Order[];
+    try {
+      // 嘗試使用索引查詢（需要創建複合索引）
+      const q = query(
+        collection(db, 'orders'),
+        where('user_id', '==', userId),
+        orderBy('created_at', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Order[];
+    } catch (error: any) {
+      // 如果索引不存在，使用備用方案：先查詢再排序
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        console.warn('Firestore 索引未創建，使用備用查詢方案');
+        const q = query(
+          collection(db, 'orders'),
+          where('user_id', '==', userId)
+        );
+        const querySnapshot = await getDocs(q);
+        const orders = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Order[];
+        
+        // 在客戶端按創建時間排序
+        return orders.sort((a, b) => {
+          const aTime = a.created_at?.toMillis?.() || a.created_at?.seconds * 1000 || 0;
+          const bTime = b.created_at?.toMillis?.() || b.created_at?.seconds * 1000 || 0;
+          return bTime - aTime; // 降序
+        });
+      }
+      throw error;
+    }
   }
 
   async getAllOrders(): Promise<Order[]> {

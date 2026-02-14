@@ -12,7 +12,7 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
-  const { toasts, success, error, removeToast } = useToast();
+  const { toasts, success, error: showError, removeToast } = useToast();
 
   useEffect(() => {
     if (firebaseUser) {
@@ -50,9 +50,9 @@ const Cart = () => {
     try {
       await firestoreService.updateCartItem(cartItemId, quantity);
       fetchCart();
-    } catch (error: any) {
-      console.error('更新購物車失敗:', error);
-      error(error.message || '更新失敗，請稍後再試');
+    } catch (err: any) {
+      console.error('更新購物車失敗:', err);
+      showError(err.message || '更新失敗，請稍後再試');
     }
   };
 
@@ -67,9 +67,9 @@ const Cart = () => {
     try {
       await firestoreService.removeCartItem(cartItemId);
       fetchCart();
-    } catch (error) {
-      console.error('刪除失敗:', error);
-      error('刪除失敗，請稍後再試');
+    } catch (err) {
+      console.error('刪除失敗:', err);
+      showError('刪除失敗，請稍後再試');
     }
   };
 
@@ -136,9 +136,9 @@ const Cart = () => {
       setTimeout(() => {
         navigate('/orders');
       }, 1000);
-    } catch (error: any) {
-      console.error('下單失敗:', error);
-      error(error.message || '下單失敗，請稍後再試');
+    } catch (err: any) {
+      console.error('下單失敗:', err);
+      showError(err.message || '下單失敗，請稍後再試');
     } finally {
       setCheckingOut(false);
     }
