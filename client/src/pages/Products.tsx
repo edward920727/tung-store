@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { firestoreService, Product } from '../services/firestore';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { ProductCard } from '../components/ProductCard';
+import { useDebounce } from '../hooks/useDebounce';
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -9,6 +10,9 @@ const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // 防抖搜索詞，減少不必要的 API 調用
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     fetchCategories();
@@ -16,7 +20,7 @@ const Products = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [selectedCategory, searchTerm]);
+  }, [selectedCategory, debouncedSearchTerm]);
 
   const fetchCategories = async () => {
     try {
@@ -28,12 +32,12 @@ const Products = () => {
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const filters: { category?: string; search?: string } = {};
       if (selectedCategory) filters.category = selectedCategory;
-      if (searchTerm) filters.search = searchTerm;
+      if (debouncedSearchTerm) filters.search = debouncedSearchTerm;
       
       const prods = await firestoreService.getProducts(filters);
       setProducts(prods);
@@ -43,7 +47,7 @@ const Products = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCategory, debouncedSearchTerm]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

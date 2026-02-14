@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { firestoreService, HomePageConfig, Product, CustomBlock } from '../services/firestore';
 
@@ -12,89 +12,105 @@ const Home = () => {
     fetchHomePageConfig();
   }, []);
 
-  const fetchHomePageConfig = async () => {
+  const fetchHomePageConfig = useCallback(async () => {
     try {
       const homeConfig = await firestoreService.getHomePageConfig();
       setConfig(homeConfig);
       
+      // 並行獲取所有商品數據，而不是串行
+      const productPromises: Promise<void>[] = [];
+      
       // 如果有精選商品 ID，獲取商品詳情
       if (homeConfig && homeConfig.featuredProductIds && homeConfig.featuredProductIds.length > 0) {
-        try {
-          const products = await Promise.all(
+        productPromises.push(
+          Promise.all(
             homeConfig.featuredProductIds.map((id: string) => 
               firestoreService.getProduct(id).catch(err => {
                 console.warn(`無法獲取商品 ${id}:`, err);
                 return null;
               })
             )
-          );
-          setFeaturedProducts(products.filter((p: Product | null): p is Product => p !== null));
-        } catch (error) {
-          console.error('獲取精選商品失敗:', error);
-          setFeaturedProducts([]);
-        }
+          ).then(products => {
+            setFeaturedProducts(products.filter((p: Product | null): p is Product => p !== null));
+          }).catch(error => {
+            console.error('獲取精選商品失敗:', error);
+            setFeaturedProducts([]);
+          })
+        );
       } else {
         setFeaturedProducts([]);
       }
 
       // 如果有自訂區塊，獲取相關商品
       if (homeConfig && homeConfig.customBlocks && homeConfig.customBlocks.length > 0) {
-        try {
-          const blockProductsMap: Record<string, Product[]> = {};
-          for (const block of homeConfig.customBlocks) {
-            if (block.type === 'product-grid' && block.productIds && block.productIds.length > 0) {
-              try {
-                const products = await Promise.all(
-                  block.productIds.map((id: string) => 
-                    firestoreService.getProduct(id).catch(err => {
-                      console.warn(`無法獲取商品 ${id}:`, err);
-                      return null;
-                    })
-                  )
-                );
-                blockProductsMap[block.id] = products.filter((p: Product | null): p is Product => p !== null);
-              } catch (error) {
-                console.error(`獲取自訂區塊 ${block.id} 的商品失敗:`, error);
-                blockProductsMap[block.id] = [];
-              }
-            }
-          }
-          setCustomBlockProducts(blockProductsMap);
-        } catch (error) {
-          console.error('獲取自訂區塊商品失敗:', error);
-          setCustomBlockProducts({});
-        }
+        productPromises.push(
+          Promise.all(
+            homeConfig.customBlocks
+              .filter(block => block.type === 'product-grid' && block.productIds && block.productIds.length > 0)
+              .map(async (block) => {
+                try {
+                  const products = await Promise.all(
+                    block.productIds!.map((id: string) => 
+                      firestoreService.getProduct(id).catch(err => {
+                        console.warn(`無法獲取商品 ${id}:`, err);
+                        return null;
+                      })
+                    )
+                  );
+                  return {
+                    blockId: block.id,
+                    products: products.filter((p: Product | null): p is Product => p !== null)
+                  };
+                } catch (error) {
+                  console.error(`獲取自訂區塊 ${block.id} 的商品失敗:`, error);
+                  return { blockId: block.id, products: [] };
+                }
+              })
+          ).then(results => {
+            const blockProductsMap: Record<string, Product[]> = {};
+            results.forEach(({ blockId, products }) => {
+              blockProductsMap[blockId] = products;
+            });
+            setCustomBlockProducts(blockProductsMap);
+          }).catch(error => {
+            console.error('獲取自訂區塊商品失敗:', error);
+            setCustomBlockProducts({});
+          })
+        );
       } else {
         setCustomBlockProducts({});
       }
+      
+      // 等待所有商品數據加載完成
+      await Promise.all(productPromises);
     } catch (error) {
       console.error('獲取首頁配置失敗:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // 使用配置或默認值
-  const heroTitle = config?.heroTitle || '時尚女裝精品店';
-  const heroSubtitle = config?.heroSubtitle || '發現最新時尚潮流，展現獨特個人風格';
-  const heroButtonText = config?.heroButtonText || '探索商品';
-  const heroButtonLink = config?.heroButtonLink || '/products';
-  const heroBackgroundImage = config?.heroBackgroundImage || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80';
-  const heroCarouselEnabled = config?.heroCarouselEnabled || false;
-  const heroCarouselImages = config?.heroCarouselImages || [];
-  const heroCarouselSpeed = config?.heroCarouselSpeed || 3000;
-  const heroCarouselAutoPlay = config?.heroCarouselAutoPlay !== undefined ? config.heroCarouselAutoPlay : true;
-  const primaryColor = config?.primaryColor || '#EC4899';
-  const gradientFrom = config?.gradientFrom || '#EC4899';
-  const gradientTo = config?.gradientTo || '#8B5CF6';
-  const showFeatures = config?.showFeatures !== undefined ? config.showFeatures : true;
-  const showGallery = config?.showGallery !== undefined ? config.showGallery : true;
-  const sectionOrder = config?.sectionOrder || ['hero', 'features', 'gallery'];
-  const features = config?.features || [
+  // 使用 useMemo 緩存配置值，避免每次渲染都重新計算
+  const heroTitle = useMemo(() => config?.heroTitle || '時尚女裝精品店', [config?.heroTitle]);
+  const heroSubtitle = useMemo(() => config?.heroSubtitle || '發現最新時尚潮流，展現獨特個人風格', [config?.heroSubtitle]);
+  const heroButtonText = useMemo(() => config?.heroButtonText || '探索商品', [config?.heroButtonText]);
+  const heroButtonLink = useMemo(() => config?.heroButtonLink || '/products', [config?.heroButtonLink]);
+  const heroBackgroundImage = useMemo(() => config?.heroBackgroundImage || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80', [config?.heroBackgroundImage]);
+  const heroCarouselEnabled = useMemo(() => config?.heroCarouselEnabled || false, [config?.heroCarouselEnabled]);
+  const heroCarouselImages = useMemo(() => config?.heroCarouselImages || [], [config?.heroCarouselImages]);
+  const heroCarouselSpeed = useMemo(() => config?.heroCarouselSpeed || 3000, [config?.heroCarouselSpeed]);
+  const heroCarouselAutoPlay = useMemo(() => config?.heroCarouselAutoPlay !== undefined ? config.heroCarouselAutoPlay : true, [config?.heroCarouselAutoPlay]);
+  const primaryColor = useMemo(() => config?.primaryColor || '#EC4899', [config?.primaryColor]);
+  const gradientFrom = useMemo(() => config?.gradientFrom || '#EC4899', [config?.gradientFrom]);
+  const gradientTo = useMemo(() => config?.gradientTo || '#8B5CF6', [config?.gradientTo]);
+  const showFeatures = useMemo(() => config?.showFeatures !== undefined ? config.showFeatures : true, [config?.showFeatures]);
+  const showGallery = useMemo(() => config?.showGallery !== undefined ? config.showGallery : true, [config?.showGallery]);
+  const sectionOrder = useMemo(() => config?.sectionOrder || ['hero', 'features', 'gallery'], [config?.sectionOrder]);
+  const features = useMemo(() => config?.features || [
     { title: '時尚精選', description: '精選最新流行女裝，涵蓋各種風格、尺碼和場合', icon: '👗', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
     { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
     { title: '品質保證', description: '優質面料與精緻工藝，讓您穿出自信與美麗', icon: '✨', imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', gradientFrom: '#10B981', gradientTo: '#059669' },
-  ];
+  ], [config?.features]);
 
   // Hero 輪播狀態
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
