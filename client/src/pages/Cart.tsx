@@ -32,28 +32,70 @@ const Cart = () => {
   };
 
   const updateQuantity = async (cartItemId: string, quantity: number) => {
-    if (quantity < 1) return;
+    if (quantity < 1) {
+      alert('數量不能少於 1');
+      return;
+    }
+    
+    const cartItem = cartItems.find(item => item.id === cartItemId);
+    if (cartItem?.product && quantity > cartItem.product.stock) {
+      alert(`庫存不足，目前僅剩 ${cartItem.product.stock} 件`);
+      return;
+    }
     
     try {
       await firestoreService.updateCartItem(cartItemId, quantity);
       fetchCart();
     } catch (error: any) {
-      alert(error.message || '更新失敗');
+      console.error('更新購物車失敗:', error);
+      alert(error.message || '更新失敗，請稍後再試');
     }
   };
 
   const removeItem = async (cartItemId: string) => {
+    const item = cartItems.find(i => i.id === cartItemId);
+    if (!item) return;
+
+    if (!confirm(`確定要移除「${item.product?.name || '商品'}」嗎？`)) {
+      return;
+    }
+
     try {
       await firestoreService.removeCartItem(cartItemId);
       fetchCart();
     } catch (error) {
       console.error('刪除失敗:', error);
+      alert('刪除失敗，請稍後再試');
     }
   };
 
   const checkout = async () => {
-    if (!firebaseUser || cartItems.length === 0) return;
-    
+    if (!firebaseUser) {
+      alert('請先登錄');
+      navigate('/login');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      alert('購物車是空的');
+      return;
+    }
+
+    // 檢查庫存
+    const outOfStockItems = cartItems.filter(item => {
+      if (!item.product) return true;
+      return item.quantity > item.product.stock;
+    });
+
+    if (outOfStockItems.length > 0) {
+      const itemNames = outOfStockItems
+        .map(item => item.product?.name || '商品')
+        .join('、');
+      alert(`以下商品庫存不足：${itemNames}，請調整數量後再試`);
+      fetchCart(); // 刷新購物車以獲取最新庫存
+      return;
+    }
+
     setCheckingOut(true);
     try {
       // 計算總金額
@@ -63,6 +105,12 @@ const Cart = () => {
         }
         return sum;
       }, 0);
+
+      if (totalAmount <= 0) {
+        alert('訂單金額無效');
+        setCheckingOut(false);
+        return;
+      }
 
       // 創建訂單項
       const orderItems: OrderItem[] = cartItems.map(item => ({
@@ -83,7 +131,8 @@ const Cart = () => {
       alert('訂單創建成功！');
       navigate('/orders');
     } catch (error: any) {
-      alert(error.message || '下單失敗');
+      console.error('下單失敗:', error);
+      alert(error.message || '下單失敗，請稍後再試');
     } finally {
       setCheckingOut(false);
     }

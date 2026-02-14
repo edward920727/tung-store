@@ -19,12 +19,19 @@ const ProductDetail = () => {
   }, [id]);
 
   const fetchProduct = async () => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     try {
       const prod = await firestoreService.getProduct(id);
+      if (!prod) {
+        console.warn('商品不存在:', id);
+      }
       setProduct(prod);
     } catch (error) {
       console.error('獲取商品失敗:', error);
+      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -36,14 +43,30 @@ const ProductDetail = () => {
       return;
     }
 
-    if (!product) return;
+    if (!product) {
+      alert('商品信息不完整，請刷新頁面重試');
+      return;
+    }
+
+    // 檢查庫存
+    if (product.stock < quantity) {
+      alert(`庫存不足，目前僅剩 ${product.stock} 件`);
+      setQuantity(product.stock);
+      return;
+    }
+
+    if (quantity < 1) {
+      alert('請選擇至少 1 件商品');
+      return;
+    }
 
     setAdding(true);
     try {
       await firestoreService.addToCart(firebaseUser.uid, product.id, quantity);
       alert('商品已添加到購物車！');
     } catch (error: any) {
-      alert(error.message || '添加失敗');
+      console.error('添加到購物車失敗:', error);
+      alert(error.message || '添加失敗，請稍後再試');
     } finally {
       setAdding(false);
     }
