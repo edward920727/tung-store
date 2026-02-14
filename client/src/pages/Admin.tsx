@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ImageCropper from '../components/ImageCropper';
-import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig, uploadImage } from '../services/firestore';
+import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig, CustomBlock, uploadImage } from '../services/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -17,7 +17,9 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  useSortable,
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { SortableItem } from '../components/SortableItem';
 
 const Admin = () => {
@@ -38,6 +40,10 @@ const Admin = () => {
     heroBackgroundImage: '',
     heroButtonText: '',
     heroButtonLink: '/products',
+    heroCarouselEnabled: false,
+    heroCarouselImages: [] as string[],
+    heroCarouselSpeed: 3000,
+    heroCarouselAutoPlay: true,
     primaryColor: '#EC4899',
     secondaryColor: '#8B5CF6',
     gradientFrom: '#EC4899',
@@ -61,6 +67,20 @@ const Admin = () => {
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [editingMembership, setEditingMembership] = useState<MembershipLevel | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showCustomBlockForm, setShowCustomBlockForm] = useState(false);
+  const [editingCustomBlock, setEditingCustomBlock] = useState<CustomBlock | null>(null);
+  const [customBlockFormData, setCustomBlockFormData] = useState({
+    type: 'text' as 'text' | 'image' | 'product-grid' | 'banner' | 'html',
+    title: '',
+    content: '',
+    imageUrl: '',
+    productIds: [] as string[],
+    backgroundColor: '#FFFFFF',
+    textColor: '#000000',
+    padding: '20px',
+    margin: '0px',
+    isVisible: true,
+  });
   const [userEditFormData, setUserEditFormData] = useState({
     membership_level_id: '',
     points: '',
@@ -202,6 +222,10 @@ const Admin = () => {
           heroBackgroundImage: config.heroBackgroundImage || '',
           heroButtonText: config.heroButtonText || '瀏覽商品',
           heroButtonLink: config.heroButtonLink || '/products',
+          heroCarouselEnabled: config.heroCarouselEnabled !== undefined ? config.heroCarouselEnabled : false,
+          heroCarouselImages: config.heroCarouselImages || [],
+          heroCarouselSpeed: config.heroCarouselSpeed || 3000,
+          heroCarouselAutoPlay: config.heroCarouselAutoPlay !== undefined ? config.heroCarouselAutoPlay : true,
           primaryColor: config.primaryColor || '#EC4899',
           secondaryColor: config.secondaryColor || '#8B5CF6',
           gradientFrom: config.gradientFrom || '#EC4899',
@@ -230,6 +254,10 @@ const Admin = () => {
         heroBackgroundImage: homeConfigFormData.heroBackgroundImage,
         heroButtonText: homeConfigFormData.heroButtonText,
         heroButtonLink: homeConfigFormData.heroButtonLink,
+        heroCarouselEnabled: homeConfigFormData.heroCarouselEnabled,
+        heroCarouselImages: homeConfigFormData.heroCarouselImages,
+        heroCarouselSpeed: homeConfigFormData.heroCarouselSpeed,
+        heroCarouselAutoPlay: homeConfigFormData.heroCarouselAutoPlay,
         primaryColor: homeConfigFormData.primaryColor,
         secondaryColor: homeConfigFormData.secondaryColor,
         gradientFrom: homeConfigFormData.gradientFrom,
@@ -240,6 +268,7 @@ const Admin = () => {
         featuredProductIds: homeConfigFormData.featuredProductIds,
         sectionOrder: homeConfigFormData.sectionOrder,
         features: homeConfigFormData.features,
+        customBlocks: homePageConfig?.customBlocks || [],
       };
 
       if (homePageConfig) {
@@ -290,6 +319,24 @@ const Admin = () => {
     }
   };
 
+  // 自訂區塊順序拖拽
+  const handleCustomBlocksDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id && homePageConfig?.customBlocks) {
+      const blocks = [...homePageConfig.customBlocks];
+      const oldIndex = blocks.findIndex(b => b.id === active.id);
+      const newIndex = blocks.findIndex(b => b.id === over.id);
+      const reorderedBlocks = arrayMove(blocks, oldIndex, newIndex);
+      // 更新 order
+      const updatedBlocks = reorderedBlocks.map((block, index) => ({
+        ...block,
+        order: index,
+      }));
+      await firestoreService.updateHomePageConfig({ customBlocks: updatedBlocks });
+      fetchHomePageConfig();
+    }
+  };
+
   // 自動保存（拖拽後）
   const handleAutoSave = async (updates: Partial<HomePageConfig>) => {
     try {
@@ -304,44 +351,171 @@ const Admin = () => {
   // 圖片拖拽上傳處理
   const handleImageDrop = async (e: React.DragEvent<HTMLDivElement>, type: 'hero' | 'feature') => {
     e.preventDefault();
+    
+    // 檢查是否已登入
+    if (!firebaseUser) {
+      alert('請先登入管理員帳號');
+      return;
+    }
+
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
         try {
-          const path = `homepage/${type}/${Date.now()}_${file.name}`;
+          setLoading(true);
+          // 清理文件名，移除特殊字符
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const path = `homepage/${type}/${Date.now()}_${sanitizedFileName}`;
           const url = await uploadImage(file, path);
           if (type === 'hero') {
             setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: url });
+            await handleAutoSave({ heroBackgroundImage: url });
           }
           alert('圖片上傳成功！');
         } catch (error: any) {
-          alert('圖片上傳失敗: ' + (error.message || '未知錯誤'));
+          console.error('圖片上傳失敗:', error);
+          alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
+        } finally {
+          setLoading(false);
         }
       } else {
-        alert('請上傳圖片文件');
+        alert('請上傳圖片文件（JPG、PNG、GIF 格式）');
       }
     }
   };
 
   const handleImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, type: 'hero' | 'feature') => {
+    // 檢查是否已登入
+    if (!firebaseUser) {
+      alert('請先登入管理員帳號');
+      e.target.value = '';
+      return;
+    }
+
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
         try {
-          const path = `homepage/${type}/${Date.now()}_${file.name}`;
+          setLoading(true);
+          // 清理文件名，移除特殊字符
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const path = `homepage/${type}/${Date.now()}_${sanitizedFileName}`;
           const url = await uploadImage(file, path);
           if (type === 'hero') {
             setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: url });
+            await handleAutoSave({ heroBackgroundImage: url });
           }
           alert('圖片上傳成功！');
         } catch (error: any) {
-          alert('圖片上傳失敗: ' + (error.message || '未知錯誤'));
+          console.error('圖片上傳失敗:', error);
+          alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
+        } finally {
+          setLoading(false);
         }
       } else {
-        alert('請上傳圖片文件');
+        alert('請上傳圖片文件（JPG、PNG、GIF 格式）');
       }
+    }
+    // 重置 input，允許重複上傳同一文件
+    e.target.value = '';
+  };
+
+  // 輪播圖片拖拽上傳處理
+  const handleCarouselImageDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    
+    // 檢查是否已登入
+    if (!firebaseUser) {
+      alert('請先登入管理員帳號');
+      return;
+    }
+
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+    if (files.length > 0) {
+      const remainingSlots = 10 - homeConfigFormData.heroCarouselImages.length;
+      const filesToUpload = files.slice(0, remainingSlots);
+      
+      if (files.length > remainingSlots) {
+        alert(`最多只能添加 10 張圖片，將上傳前 ${remainingSlots} 張`);
+      }
+
+      try {
+        setLoading(true);
+        const uploadPromises = filesToUpload.map(async (file) => {
+          // 清理文件名
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const path = `homepage/carousel/${Date.now()}_${Math.random().toString(36).substring(7)}_${sanitizedFileName}`;
+          return await uploadImage(file, path);
+        });
+        
+        const urls = await Promise.all(uploadPromises);
+        const newImages = [...homeConfigFormData.heroCarouselImages, ...urls];
+        setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+        await handleAutoSave({ heroCarouselImages: newImages });
+        alert(`成功上傳 ${urls.length} 張圖片！`);
+      } catch (error: any) {
+        console.error('圖片上傳失敗:', error);
+        alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // 輪播圖片文件選擇處理
+  const handleCarouselImageFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 檢查是否已登入
+    if (!firebaseUser) {
+      alert('請先登入管理員帳號');
+      e.target.value = '';
+      return;
+    }
+
+    const files = Array.from(e.target.files || []).filter(file => file.type.startsWith('image/'));
+    if (files.length > 0) {
+      const remainingSlots = 10 - homeConfigFormData.heroCarouselImages.length;
+      const filesToUpload = files.slice(0, remainingSlots);
+      
+      if (files.length > remainingSlots) {
+        alert(`最多只能添加 10 張圖片，將上傳前 ${remainingSlots} 張`);
+      }
+
+      try {
+        setLoading(true);
+        const uploadPromises = filesToUpload.map(async (file) => {
+          // 清理文件名
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const path = `homepage/carousel/${Date.now()}_${Math.random().toString(36).substring(7)}_${sanitizedFileName}`;
+          return await uploadImage(file, path);
+        });
+        
+        const urls = await Promise.all(uploadPromises);
+        const newImages = [...homeConfigFormData.heroCarouselImages, ...urls];
+        setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+        await handleAutoSave({ heroCarouselImages: newImages });
+        alert(`成功上傳 ${urls.length} 張圖片！`);
+      } catch (error: any) {
+        console.error('圖片上傳失敗:', error);
+        alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
+      } finally {
+        setLoading(false);
+      }
+    }
+    // 重置 input
+    e.target.value = '';
+  };
+
+  // 輪播圖片順序拖拽
+  const handleCarouselImagesDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = homeConfigFormData.heroCarouselImages.indexOf(active.id as string);
+      const newIndex = homeConfigFormData.heroCarouselImages.indexOf(over.id as string);
+      const newOrder = arrayMove(homeConfigFormData.heroCarouselImages, oldIndex, newIndex);
+      setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newOrder });
+      await handleAutoSave({ heroCarouselImages: newOrder });
     }
   };
 
@@ -549,9 +723,39 @@ const Admin = () => {
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
       await firestoreService.updateOrderStatus(orderId, status as Order['status']);
-      fetchOrders();
+      alert('訂單狀態已更新！');
+      fetchOrders(); // 重新獲取訂單列表
     } catch (error) {
       console.error('更新訂單狀態失敗:', error);
+      alert('更新訂單狀態失敗，請重試');
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      pending: '待付款',
+      paid: '已付款',
+      shipped: '已出貨',
+      delivered: '已完成',
+      cancelled: '已取消'
+    };
+    return statusMap[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'paid':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'shipped':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'delivered':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -880,38 +1084,61 @@ const Admin = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.id.slice(0, 8)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.user_id.slice(0, 8)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">NT${order.total_amount.toFixed(2)}</td>
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{order.id.slice(0, 8)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {order.user_id.slice(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
+                        NT${order.total_amount.toFixed(2)}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          order.status === 'paid' ? 'bg-blue-100 text-blue-800' :
-                          order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                          order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {order.status}
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
+                          {getStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {order.created_at && (order.created_at instanceof Timestamp 
-                          ? order.created_at.toDate().toLocaleString('zh-CN')
-                          : new Date(order.created_at).toLocaleString('zh-CN'))}
+                          ? order.created_at.toDate().toLocaleString('zh-TW')
+                          : new Date(order.created_at).toLocaleString('zh-TW'))}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                          className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-                        >
-                          <option value="pending">待支付</option>
-                          <option value="paid">已支付</option>
-                          <option value="shipped">已發貨</option>
-                          <option value="delivered">已送達</option>
-                          <option value="cancelled">已取消</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={order.status}
+                            onChange={(e) => {
+                              if (confirm(`確定要將訂單 #${order.id.slice(0, 8)} 的狀態更改為「${getStatusText(e.target.value)}」嗎？`)) {
+                                handleUpdateOrderStatus(order.id, e.target.value);
+                              } else {
+                                // 如果取消，恢復原值
+                                e.target.value = order.status;
+                              }
+                            }}
+                            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all bg-white"
+                          >
+                            <option value="pending">待付款</option>
+                            <option value="paid">已付款</option>
+                            <option value="shipped">已出貨</option>
+                            <option value="delivered">已完成</option>
+                            <option value="cancelled">已取消</option>
+                          </select>
+                          {order.items && order.items.length > 0 && (
+                            <button
+                              onClick={() => {
+                                const itemsList = order.items.map((item, idx) => 
+                                  `  ${item.name || '商品'} x ${item.quantity} = NT$${(item.price * item.quantity).toFixed(2)}`
+                                ).join('\n');
+                                alert(`訂單詳情：\n\n${itemsList}\n\n總計：NT$${order.total_amount.toFixed(2)}`);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-sm underline"
+                              title="查看訂單詳情"
+                            >
+                              詳情
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1518,7 +1745,7 @@ const Admin = () => {
             <div className="text-center py-12">加載中...</div>
           ) : (
             <form onSubmit={handleHomePageConfigSubmit} className="space-y-6">
-              {/* Hero 區域設置 */}
+              {/* ========== Hero 區域設置（包含輪播） ========== */}
               <div className="bg-white shadow-lg rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">Hero 區域設置</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1615,9 +1842,215 @@ const Admin = () => {
                     />
                   </div>
                 </div>
+
+                {/* Hero 輪播設置 */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-md font-semibold">Hero 輪播功能</h4>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={homeConfigFormData.heroCarouselEnabled}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselEnabled: e.target.checked })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">啟用輪播</span>
+                    </label>
+                  </div>
+
+                  {homeConfigFormData.heroCarouselEnabled && (
+                    <div className="space-y-4">
+                      {/* 輪播速度設置 */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            輪播速度（毫秒）
+                          </label>
+                          <input
+                            type="number"
+                            min="1000"
+                            max="10000"
+                            step="500"
+                            value={homeConfigFormData.heroCarouselSpeed}
+                            onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselSpeed: parseInt(e.target.value) || 3000 })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                            placeholder="3000"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            建議值：2000-5000 毫秒（2-5秒）
+                          </p>
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={homeConfigFormData.heroCarouselAutoPlay}
+                              onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselAutoPlay: e.target.checked })}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">自動播放</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 輪播圖片管理 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          輪播圖片（最多 10 張，可拖拽排序）
+                        </label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          已添加 {homeConfigFormData.heroCarouselImages.length} / 10 張圖片
+                        </p>
+
+                        {/* 已添加的圖片列表 */}
+                        {homeConfigFormData.heroCarouselImages.length > 0 && (
+                          <div className="mb-4">
+                            <DndContext
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={handleCarouselImagesDragEnd}
+                            >
+                              <SortableContext
+                                items={homeConfigFormData.heroCarouselImages}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                  {homeConfigFormData.heroCarouselImages.map((imageUrl, index) => (
+                                    <SortableItem key={imageUrl} id={imageUrl}>
+                                      <div className="relative group">
+                                        <div className="relative aspect-video overflow-hidden rounded-lg border-2 border-gray-200">
+                                          <img
+                                            src={imageUrl}
+                                            alt={`輪播圖 ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                          />
+                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                              type="button"
+                                              onClick={async () => {
+                                                const newImages = homeConfigFormData.heroCarouselImages.filter(url => url !== imageUrl);
+                                                setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+                                                await handleAutoSave({ heroCarouselImages: newImages });
+                                              }}
+                                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                            >
+                                              刪除
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                          {index + 1}
+                                        </div>
+                                      </div>
+                                    </SortableItem>
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                          </div>
+                        )}
+
+                        {/* 添加圖片 */}
+                        <div className="space-y-3">
+                          {/* 拖拽上傳區域 */}
+                          <div
+                            onDrop={(e) => handleCarouselImageDrop(e)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDragEnter={(e) => e.preventDefault()}
+                            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                              homeConfigFormData.heroCarouselImages.length >= 10
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                : 'border-gray-300 hover:border-pink-500 cursor-pointer'
+                            }`}
+                            onClick={() => {
+                              if (homeConfigFormData.heroCarouselImages.length < 10) {
+                                document.getElementById('carousel-image-upload')?.click();
+                              }
+                            }}
+                          >
+                            <input
+                              id="carousel-image-upload"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => handleCarouselImageFileSelect(e)}
+                            />
+                            <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                              <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <p className="mt-2 text-sm text-gray-600">
+                              {homeConfigFormData.heroCarouselImages.length >= 10
+                                ? '已達上限（10張）'
+                                : '拖拽圖片到此處或點擊上傳（可多選）'}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">支持 JPG、PNG、GIF 格式</p>
+                          </div>
+
+                          {/* 手動輸入 URL */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              或直接輸入圖片 URL
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                id="carousel-image-url-input"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                                placeholder="https://example.com/image.jpg"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const input = e.target as HTMLInputElement;
+                                    const url = input.value.trim();
+                                    if (url && homeConfigFormData.heroCarouselImages.length < 10) {
+                                      if (!homeConfigFormData.heroCarouselImages.includes(url)) {
+                                        const newImages = [...homeConfigFormData.heroCarouselImages, url];
+                                        setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+                                        input.value = '';
+                                      } else {
+                                        alert('此圖片已存在');
+                                      }
+                                    } else if (homeConfigFormData.heroCarouselImages.length >= 10) {
+                                      alert('最多只能添加 10 張圖片');
+                                    }
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const input = document.getElementById('carousel-image-url-input') as HTMLInputElement;
+                                  const url = input.value.trim();
+                                  if (url && homeConfigFormData.heroCarouselImages.length < 10) {
+                                    if (!homeConfigFormData.heroCarouselImages.includes(url)) {
+                                      const newImages = [...homeConfigFormData.heroCarouselImages, url];
+                                      setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+                                      input.value = '';
+                                    } else {
+                                      alert('此圖片已存在');
+                                    }
+                                  } else if (homeConfigFormData.heroCarouselImages.length >= 10) {
+                                    alert('最多只能添加 10 張圖片');
+                                  }
+                                }}
+                                className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-md"
+                              >
+                                添加
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* 顏色主題設置 */}
+              {/* ========== 顏色與布局設置 ========== */}
               <div className="bg-white shadow-lg rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">顏色主題</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1692,8 +2125,8 @@ const Admin = () => {
                 </div>
               </div>
 
-              {/* 布局設置 */}
-              <div className="bg-white shadow-lg rounded-lg p-6">
+              {/* 布局設置（合併到顏色主題區塊下方） */}
+              <div className="bg-white shadow-lg rounded-lg p-6 mt-6">
                 <h3 className="text-lg font-semibold mb-4">布局設置</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1731,7 +2164,7 @@ const Admin = () => {
                 </div>
               </div>
 
-              {/* 區塊順序設置 */}
+              {/* ========== 區塊管理（順序、精選商品、自訂區塊） ========== */}
               <div className="bg-white shadow-lg rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">區塊順序</h3>
                 <p className="text-sm text-gray-600 mb-4">拖拽調整首頁區塊的顯示順序</p>
@@ -1751,6 +2184,11 @@ const Admin = () => {
                           features: '特色區塊',
                           gallery: '精選商品',
                         };
+                        // 檢查是否為自訂區塊
+                        const customBlock = homePageConfig?.customBlocks?.find(b => b.id === sectionId);
+                        const displayName = customBlock
+                          ? `${customBlock.title || '自訂區塊'} (${customBlock.type})`
+                          : sectionNames[sectionId] || sectionId;
                         return (
                           <SortableItem key={sectionId} id={sectionId}>
                             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-pink-300 transition-colors">
@@ -1758,7 +2196,10 @@ const Admin = () => {
                                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                 </svg>
-                                <span className="font-medium text-gray-900">{sectionNames[sectionId] || sectionId}</span>
+                                <span className="font-medium text-gray-900">{displayName}</span>
+                                {customBlock && !customBlock.isVisible && (
+                                  <span className="text-xs px-2 py-1 bg-red-100 text-red-600 rounded">隱藏</span>
+                                )}
                               </div>
                               <span className="text-xs text-gray-500">拖拽調整順序</span>
                             </div>
@@ -1770,8 +2211,8 @@ const Admin = () => {
                 </DndContext>
               </div>
 
-              {/* 精選商品設置 */}
-              <div className="bg-white shadow-lg rounded-lg p-6">
+              {/* 精選商品設置（合併到區塊管理區塊） */}
+              <div className="bg-white shadow-lg rounded-lg p-6 mt-6">
                 <h3 className="text-lg font-semibold mb-4">精選商品</h3>
                 <p className="text-sm text-gray-600 mb-4">選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序</p>
                 {products.length === 0 ? (
@@ -1795,36 +2236,79 @@ const Admin = () => {
                               {homeConfigFormData.featuredProductIds.map((productId) => {
                                 const product = products.find(p => p.id === productId);
                                 if (!product) return null;
-                                return (
-                                  <SortableItem key={productId} id={productId}>
-                                    <div className="flex items-center p-3 bg-pink-50 border-2 border-pink-300 rounded-lg">
-                                      <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                                      </svg>
+                                
+                                // 使用 useSortable hook 來獲取拖拽功能
+                                const FeaturedProductItem = () => {
+                                  const {
+                                    attributes,
+                                    listeners,
+                                    setNodeRef,
+                                    transform,
+                                    transition,
+                                    isDragging,
+                                  } = useSortable({ id: productId });
+
+                                  const style = {
+                                    transform: CSS.Transform.toString(transform),
+                                    transition,
+                                    opacity: isDragging ? 0.5 : 1,
+                                  };
+
+                                  return (
+                                    <div
+                                      ref={setNodeRef}
+                                      style={style}
+                                      {...attributes}
+                                      className="flex items-center p-3 bg-pink-50 border-2 border-pink-300 rounded-lg hover:bg-pink-100 transition-colors"
+                                    >
+                                      <div
+                                        {...listeners}
+                                        className="w-5 h-5 mr-3 cursor-move flex-shrink-0"
+                                        title="拖拽調整順序"
+                                      >
+                                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                        </svg>
+                                      </div>
                                       <img
                                         src={product.image_url || 'https://via.placeholder.com/50x50'}
                                         alt={product.name}
-                                        className="w-12 h-12 object-cover rounded mr-3"
+                                        className="w-12 h-12 object-cover rounded mr-3 flex-shrink-0"
                                       />
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
                                         <p className="text-xs text-gray-500">NT${product.price}</p>
                                       </div>
                                       <button
-                                        onClick={(e) => {
+                                        type="button"
+                                        onClick={async (e) => {
+                                          e.preventDefault();
                                           e.stopPropagation();
-                                          setHomeConfigFormData({
-                                            ...homeConfigFormData,
-                                            featuredProductIds: homeConfigFormData.featuredProductIds.filter(id => id !== productId),
-                                          });
+                                          if (confirm(`確定要移除「${product.name}」嗎？`)) {
+                                            try {
+                                              const newIds = homeConfigFormData.featuredProductIds.filter(id => id !== productId);
+                                              setHomeConfigFormData({
+                                                ...homeConfigFormData,
+                                                featuredProductIds: newIds,
+                                              });
+                                              await handleAutoSave({ featuredProductIds: newIds });
+                                              alert('已移除精選商品');
+                                            } catch (error) {
+                                              console.error('移除失敗:', error);
+                                              alert('移除失敗，請重試');
+                                            }
+                                          }
                                         }}
-                                        className="ml-2 text-red-600 hover:text-red-800"
+                                        className="ml-2 px-3 py-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors shadow-sm hover:shadow-md flex-shrink-0"
+                                        title="移除精選商品"
                                       >
-                                        移除
+                                        刪除
                                       </button>
                                     </div>
-                                  </SortableItem>
-                                );
+                                  );
+                                };
+
+                                return <FeaturedProductItem key={productId} />;
                               })}
                             </div>
                           </SortableContext>
@@ -1886,6 +2370,438 @@ const Admin = () => {
                   </>
                 )}
               </div>
+
+              {/* 自訂區塊管理 */}
+              <div className="bg-white shadow-lg rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">自訂區塊</h3>
+                    <p className="text-sm text-gray-600 mt-1">新增和管理自訂首頁區塊</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCustomBlock(null);
+                      setCustomBlockFormData({
+                        type: 'text',
+                        title: '',
+                        content: '',
+                        imageUrl: '',
+                        productIds: [],
+                        backgroundColor: '#FFFFFF',
+                        textColor: '#000000',
+                        padding: '20px',
+                        margin: '0px',
+                        isVisible: true,
+                      });
+                      setShowCustomBlockForm(true);
+                    }}
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-4 py-2 rounded-md shadow-md"
+                  >
+                    + 新增區塊
+                  </button>
+                </div>
+
+                {/* 自訂區塊列表 */}
+                {homePageConfig?.customBlocks && homePageConfig.customBlocks.length > 0 ? (
+                  <div className="space-y-3 mb-4">
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleCustomBlocksDragEnd}
+                    >
+                      <SortableContext
+                        items={homePageConfig.customBlocks.map(b => b.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {homePageConfig.customBlocks
+                          .sort((a, b) => a.order - b.order)
+                          .map((block) => {
+                            // 使用 useSortable hook 來獲取拖拽功能
+                            const CustomBlockItem = () => {
+                              const {
+                                attributes,
+                                listeners,
+                                setNodeRef,
+                                transform,
+                                transition,
+                                isDragging,
+                              } = useSortable({ id: block.id });
+
+                              const style = {
+                                transform: CSS.Transform.toString(transform),
+                                transition,
+                                opacity: isDragging ? 0.5 : 1,
+                              };
+
+                              return (
+                                <div
+                                  ref={setNodeRef}
+                                  style={style}
+                                  {...attributes}
+                                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-pink-300 transition-colors"
+                                >
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div
+                                      {...listeners}
+                                      className="w-5 h-5 cursor-move flex-shrink-0"
+                                      title="拖拽調整順序"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-900">
+                                          {block.title || `區塊 (${block.type})`}
+                                        </span>
+                                        <span className="text-xs px-2 py-1 bg-gray-200 rounded text-gray-600">
+                                          {block.type}
+                                        </span>
+                                        {!block.isVisible && (
+                                          <span className="text-xs px-2 py-1 bg-red-100 text-red-600 rounded">隱藏</span>
+                                        )}
+                                      </div>
+                                      {block.content && (
+                                        <p className="text-sm text-gray-500 mt-1 truncate">{block.content.substring(0, 50)}...</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setEditingCustomBlock(block);
+                                        setCustomBlockFormData({
+                                          type: block.type,
+                                          title: block.title || '',
+                                          content: block.content || '',
+                                          imageUrl: block.imageUrl || '',
+                                          productIds: block.productIds || [],
+                                          backgroundColor: block.backgroundColor || '#FFFFFF',
+                                          textColor: block.textColor || '#000000',
+                                          padding: block.padding || '20px',
+                                          margin: block.margin || '0px',
+                                          isVisible: block.isVisible,
+                                        });
+                                        setShowCustomBlockForm(true);
+                                      }}
+                                      className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                                      title="編輯區塊"
+                                    >
+                                      編輯
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={async (e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (confirm(`確定要刪除「${block.title || `區塊 (${block.type})`}」嗎？`)) {
+                                          try {
+                                            const updatedBlocks = (homePageConfig?.customBlocks || []).filter(b => b.id !== block.id);
+                                            const updatedSectionOrder = homeConfigFormData.sectionOrder.filter(id => id !== block.id);
+                                            await firestoreService.updateHomePageConfig({
+                                              customBlocks: updatedBlocks,
+                                              sectionOrder: updatedSectionOrder,
+                                            });
+                                            alert('已刪除自訂區塊');
+                                            fetchHomePageConfig();
+                                          } catch (error) {
+                                            console.error('刪除失敗:', error);
+                                            alert('刪除失敗，請重試');
+                                          }
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors shadow-sm hover:shadow-md"
+                                      title="刪除區塊"
+                                    >
+                                      刪除
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            };
+
+                            return <CustomBlockItem key={block.id} />;
+                          })}
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>暫無自訂區塊，點擊「新增區塊」開始創建</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 自訂區塊表單 */}
+              {showCustomBlockForm && (
+                <div className="bg-white shadow-lg rounded-lg p-6 border-2 border-pink-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">
+                      {editingCustomBlock ? '編輯區塊' : '新增區塊'}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomBlockForm(false);
+                        setEditingCustomBlock(null);
+                      }}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">區塊類型 *</label>
+                      <select
+                        value={customBlockFormData.type}
+                        onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, type: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      >
+                        <option value="text">文字區塊</option>
+                        <option value="image">圖片區塊</option>
+                        <option value="product-grid">商品網格</option>
+                        <option value="banner">橫幅廣告</option>
+                        <option value="html">HTML 區塊</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">標題</label>
+                      <input
+                        type="text"
+                        value={customBlockFormData.title}
+                        onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, title: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        placeholder="區塊標題（選填）"
+                      />
+                    </div>
+
+                    {(customBlockFormData.type === 'text' || customBlockFormData.type === 'html') && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {customBlockFormData.type === 'html' ? 'HTML 內容' : '文字內容'} *
+                        </label>
+                        <textarea
+                          value={customBlockFormData.content}
+                          onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, content: e.target.value })}
+                          rows={customBlockFormData.type === 'html' ? 8 : 4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder={customBlockFormData.type === 'html' ? '輸入 HTML 代碼' : '輸入文字內容'}
+                          required={customBlockFormData.type === 'text'}
+                        />
+                      </div>
+                    )}
+
+                    {(customBlockFormData.type === 'image' || customBlockFormData.type === 'banner') && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">圖片 URL *</label>
+                        <input
+                          type="url"
+                          value={customBlockFormData.imageUrl}
+                          onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, imageUrl: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="https://example.com/image.jpg"
+                          required
+                        />
+                        {customBlockFormData.imageUrl && (
+                          <img
+                            src={customBlockFormData.imageUrl}
+                            alt="預覽"
+                            className="mt-2 w-full h-48 object-cover rounded-md"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {customBlockFormData.type === 'product-grid' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">選擇商品 *</label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3">
+                          {products.map((product) => (
+                            <label
+                              key={product.id}
+                              className="flex items-center p-2 border rounded cursor-pointer hover:bg-gray-50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={customBlockFormData.productIds.includes(product.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setCustomBlockFormData({
+                                      ...customBlockFormData,
+                                      productIds: [...customBlockFormData.productIds, product.id],
+                                    });
+                                  } else {
+                                    setCustomBlockFormData({
+                                      ...customBlockFormData,
+                                      productIds: customBlockFormData.productIds.filter(id => id !== product.id),
+                                    });
+                                  }
+                                }}
+                                className="mr-2"
+                              />
+                              <img
+                                src={product.image_url || 'https://via.placeholder.com/40x40'}
+                                alt={product.name}
+                                className="w-10 h-10 object-cover rounded mr-2"
+                              />
+                              <span className="text-sm truncate">{product.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">背景顏色</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={customBlockFormData.backgroundColor}
+                            onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, backgroundColor: e.target.value })}
+                            className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={customBlockFormData.backgroundColor}
+                            onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, backgroundColor: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">文字顏色</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={customBlockFormData.textColor}
+                            onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, textColor: e.target.value })}
+                            className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={customBlockFormData.textColor}
+                            onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, textColor: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">內距 (padding)</label>
+                        <input
+                          type="text"
+                          value={customBlockFormData.padding}
+                          onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, padding: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="20px"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">外距 (margin)</label>
+                        <input
+                          type="text"
+                          value={customBlockFormData.margin}
+                          onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, margin: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="0px"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={customBlockFormData.isVisible}
+                          onChange={(e) => setCustomBlockFormData({ ...customBlockFormData, isVisible: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">顯示此區塊</span>
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4 border-t">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustomBlockForm(false);
+                          setEditingCustomBlock(null);
+                        }}
+                        className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                      >
+                        取消
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (customBlockFormData.type === 'text' && !customBlockFormData.content) {
+                            alert('請輸入文字內容');
+                            return;
+                          }
+                          if ((customBlockFormData.type === 'image' || customBlockFormData.type === 'banner') && !customBlockFormData.imageUrl) {
+                            alert('請輸入圖片 URL');
+                            return;
+                          }
+                          if (customBlockFormData.type === 'product-grid' && customBlockFormData.productIds.length === 0) {
+                            alert('請至少選擇一個商品');
+                            return;
+                          }
+
+                          const existingBlocks = homePageConfig?.customBlocks || [];
+                          let updatedBlocks: CustomBlock[];
+
+                          if (editingCustomBlock) {
+                            // 編輯現有區塊
+                            updatedBlocks = existingBlocks.map(block =>
+                              block.id === editingCustomBlock.id
+                                ? {
+                                    ...editingCustomBlock,
+                                    ...customBlockFormData,
+                                    order: editingCustomBlock.order,
+                                  }
+                                : block
+                            );
+                          } else {
+                            // 新增區塊
+                            const newBlock: CustomBlock = {
+                              id: `custom-block-${Date.now()}`,
+                              ...customBlockFormData,
+                              order: existingBlocks.length,
+                            };
+                            updatedBlocks = [...existingBlocks, newBlock];
+                            // 將新區塊加入 sectionOrder
+                            const newSectionOrder = [...homeConfigFormData.sectionOrder, newBlock.id];
+                            setHomeConfigFormData({ ...homeConfigFormData, sectionOrder: newSectionOrder });
+                            await firestoreService.updateHomePageConfig({ sectionOrder: newSectionOrder });
+                          }
+
+                          await firestoreService.updateHomePageConfig({ customBlocks: updatedBlocks });
+                          setShowCustomBlockForm(false);
+                          setEditingCustomBlock(null);
+                          fetchHomePageConfig();
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-md shadow-md"
+                      >
+                        {editingCustomBlock ? '更新' : '新增'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 提交按鈕 */}
               <div className="flex justify-end space-x-4">

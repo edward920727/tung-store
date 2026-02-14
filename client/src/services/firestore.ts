@@ -96,6 +96,21 @@ export interface Coupon {
   created_at: Timestamp;
 }
 
+export interface CustomBlock {
+  id: string;
+  type: 'text' | 'image' | 'product-grid' | 'banner' | 'html';
+  title?: string;
+  content?: string;
+  imageUrl?: string;
+  productIds?: string[];
+  backgroundColor?: string;
+  textColor?: string;
+  padding?: string;
+  margin?: string;
+  order: number;
+  isVisible: boolean;
+}
+
 export interface HomePageConfig {
   id: string;
   // Hero 區域
@@ -104,6 +119,12 @@ export interface HomePageConfig {
   heroBackgroundImage: string;
   heroButtonText: string;
   heroButtonLink: string;
+  
+  // Hero 輪播設置
+  heroCarouselEnabled: boolean; // 是否啟用輪播
+  heroCarouselImages: string[]; // 輪播圖片列表
+  heroCarouselSpeed: number; // 輪播速度（毫秒），例如 3000 = 3秒
+  heroCarouselAutoPlay: boolean; // 是否自動播放
   
   // 顏色主題
   primaryColor: string; // 主色
@@ -120,7 +141,7 @@ export interface HomePageConfig {
   showGallery: boolean; // 是否顯示畫廊
   
   // 區塊順序
-  sectionOrder: string[]; // 區塊順序，例如：['hero', 'features', 'gallery']
+  sectionOrder: string[]; // 區塊順序，例如：['hero', 'features', 'gallery', 'custom-block-1']
   
   // 特色區塊
   features: Array<{
@@ -131,6 +152,9 @@ export interface HomePageConfig {
     gradientFrom: string;
     gradientTo: string;
   }>;
+  
+  // 自訂區塊
+  customBlocks?: CustomBlock[];
   
   updated_at: Timestamp;
   created_at: Timestamp;
@@ -525,13 +549,46 @@ export const firestoreService = new FirestoreService();
 // ========== Firebase Storage 圖片上傳 ==========
 export const uploadImage = async (file: File, path: string): Promise<string> => {
   try {
+    // 檢查文件大小（限制為 10MB）
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new Error('圖片大小不能超過 10MB');
+    }
+
+    // 檢查文件類型
+    if (!file.type.startsWith('image/')) {
+      throw new Error('只能上傳圖片文件');
+    }
+
     const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
+    
+    // 設置上傳元數據
+    const metadata = {
+      contentType: file.type,
+      cacheControl: 'public, max-age=31536000', // 緩存一年
+    };
+
+    // 上傳文件
+    await uploadBytes(storageRef, file, metadata);
+    
+    // 獲取下載 URL
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
-  } catch (error) {
+  } catch (error: any) {
     console.error('圖片上傳失敗:', error);
-    throw error;
+    
+    // 提供更友好的錯誤訊息
+    if (error.code === 'storage/unauthorized') {
+      throw new Error('您沒有權限上傳圖片，請確認已登入管理員帳號');
+    } else if (error.code === 'storage/canceled') {
+      throw new Error('上傳已取消');
+    } else if (error.code === 'storage/unknown') {
+      throw new Error('上傳失敗，請檢查網絡連接或 Firebase Storage 配置');
+    } else if (error.message) {
+      throw error;
+    } else {
+      throw new Error('圖片上傳失敗，請稍後再試');
+    }
   }
 };
 
