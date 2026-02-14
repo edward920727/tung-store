@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableItem } from '../components/SortableItem';
+import { CollapsibleSection } from '../components/CollapsibleSection';
 
 // 範例商品數據
 const EXAMPLE_PRODUCTS = [
@@ -117,6 +118,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showImportButton, setShowImportButton] = useState(false);
+  const [activeHomepageSection, setActiveHomepageSection] = useState<string>('hero');
   
   // 首頁配置相關狀態
   const [homePageConfig, setHomePageConfig] = useState<HomePageConfig | null>(null);
@@ -147,6 +149,16 @@ const Admin = () => {
   });
   const [showProductForm, setShowProductForm] = useState(false);
   const [showCouponForm, setShowCouponForm] = useState(false);
+  const [showFeatureForm, setShowFeatureForm] = useState(false);
+  const [editingFeatureIndex, setEditingFeatureIndex] = useState<number | null>(null);
+  const [featureFormData, setFeatureFormData] = useState({
+    title: '',
+    description: '',
+    icon: '👗',
+    imageUrl: '',
+    gradientFrom: '#EC4899',
+    gradientTo: '#8B5CF6',
+  });
   const [showMembershipForm, setShowMembershipForm] = useState(false);
   const [showUserEditForm, setShowUserEditForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -402,6 +414,19 @@ const Admin = () => {
       setHomeConfigFormData({ ...homeConfigFormData, featuredProductIds: newOrder });
       // 自動保存
       handleAutoSave({ featuredProductIds: newOrder });
+    }
+  };
+
+  // 特色區塊順序拖拽
+  const handleFeaturesDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const activeIndex = parseInt((active.id as string).replace('feature-', ''));
+      const overIndex = parseInt((over.id as string).replace('feature-', ''));
+      const newFeatures = arrayMove(homeConfigFormData.features, activeIndex, overIndex);
+      setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
+      // 自動保存
+      handleAutoSave({ features: newFeatures });
     }
   };
 
@@ -1255,8 +1280,8 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
-                          <select
-                            value={order.status}
+                        <select
+                          value={order.status}
                             onChange={(e) => {
                               if (confirm(`確定要將訂單 #${order.id.slice(0, 8)} 的狀態更改為「${getStatusText(e.target.value)}」嗎？`)) {
                                 handleUpdateOrderStatus(order.id, e.target.value);
@@ -1271,8 +1296,8 @@ const Admin = () => {
                             <option value="paid">已付款</option>
                             <option value="shipped">已出貨</option>
                             <option value="delivered">已完成</option>
-                            <option value="cancelled">已取消</option>
-                          </select>
+                          <option value="cancelled">已取消</option>
+                        </select>
                           {order.items && order.items.length > 0 && (
                             <button
                               onClick={() => {
@@ -1884,241 +1909,271 @@ const Admin = () => {
       )}
 
       {activeTab === 'homepage' && (
-        <div>
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">首頁設計</h2>
-            <p className="text-sm text-gray-600 mt-1">自定義首頁的布局、顏色和精選商品</p>
+        <div className="flex gap-6">
+          {/* 側邊導覽列 */}
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white shadow-lg rounded-lg p-4 sticky top-4">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">功能導覽</h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'hero', label: 'Hero 區域', icon: '🎯' },
+                  { id: 'colors', label: '顏色主題', icon: '🎨' },
+                  { id: 'layout', label: '布局設置', icon: '📐' },
+                  { id: 'features', label: '特色區塊', icon: '⭐' },
+                  { id: 'sections', label: '區塊順序', icon: '📋' },
+                  { id: 'products', label: '精選商品', icon: '🛍️' },
+                  { id: 'custom', label: '自訂區塊', icon: '🧩' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveHomepageSection(item.id);
+                      // 滾動到對應區塊
+                      setTimeout(() => {
+                        const element = document.getElementById(`section-${item.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeHomepageSection === item.id
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="mr-2">{item.icon}</span>
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
           </div>
 
-          {loading ? (
-            <div className="text-center py-12">加載中...</div>
-          ) : (
-            <form onSubmit={handleHomePageConfigSubmit} className="space-y-6">
-              {/* ========== Hero 區域設置（包含輪播） ========== */}
-              <div className="bg-white shadow-lg rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">Hero 區域設置</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">主標題 *</label>
-                    <input
-                      type="text"
-                      value={homeConfigFormData.heroTitle}
-                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroTitle: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="時尚女裝精品店"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">副標題 *</label>
-                    <input
-                      type="text"
-                      value={homeConfigFormData.heroSubtitle}
-                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroSubtitle: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="發現最新時尚潮流，展現獨特個人風格"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">按鈕文字 *</label>
-                    <input
-                      type="text"
-                      value={homeConfigFormData.heroButtonText}
-                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonText: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="瀏覽商品"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">按鈕連結 *</label>
-                    <input
-                      type="text"
-                      value={homeConfigFormData.heroButtonLink}
-                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonLink: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="/products"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">背景圖片</label>
-                    {/* 拖拽上傳區域 */}
-                    <div
-                      onDrop={(e) => handleImageDrop(e, 'hero')}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDragEnter={(e) => e.preventDefault()}
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pink-500 transition-colors cursor-pointer"
-                      onClick={() => document.getElementById('hero-image-upload')?.click()}
-                    >
+          {/* 主要內容區域 */}
+          <div className="flex-1">
+            {loading ? (
+              <div className="text-center py-12">加載中...</div>
+            ) : (
+              <form onSubmit={handleHomePageConfigSubmit} className="space-y-6">
+                {/* ========== Hero 區域設置（包含輪播） ========== */}
+                <CollapsibleSection
+                  id="section-hero"
+                  title="Hero 區域設置"
+                  description="設置首頁 Hero 區域的標題、背景圖和輪播功能"
+                  icon="🎯"
+                  defaultOpen={activeHomepageSection === 'hero'}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">主標題 *</label>
                       <input
-                        id="hero-image-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageFileSelect(e, 'hero')}
+                        type="text"
+                        value={homeConfigFormData.heroTitle}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroTitle: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        placeholder="時尚女裝精品店"
                       />
-                      {homeConfigFormData.heroBackgroundImage ? (
-                        <div>
-                          <img
-                            src={homeConfigFormData.heroBackgroundImage}
-                            alt="預覽"
-                            className="w-full h-48 object-cover rounded-md mb-2"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                          <p className="text-sm text-gray-600">點擊或拖拽圖片到此處更換</p>
-                        </div>
-                      ) : (
-                        <div>
-                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="mt-2 text-sm text-gray-600">拖拽圖片到此處或點擊上傳</p>
-                          <p className="text-xs text-gray-500 mt-1">支持 JPG、PNG、GIF 格式</p>
-                        </div>
-                      )}
                     </div>
-                    {/* 也可以手動輸入 URL */}
-                    <input
-                      type="url"
-                      value={homeConfigFormData.heroBackgroundImage}
-                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: e.target.value })}
-                      className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="或直接輸入圖片 URL"
-                    />
-                  </div>
-                </div>
-
-                {/* Hero 輪播設置 */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-md font-semibold">Hero 輪播功能</h4>
-                    <label className="flex items-center">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">副標題 *</label>
                       <input
-                        type="checkbox"
-                        checked={homeConfigFormData.heroCarouselEnabled}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselEnabled: e.target.checked })}
-                        className="mr-2"
+                        type="text"
+                        value={homeConfigFormData.heroSubtitle}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroSubtitle: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        placeholder="發現最新時尚潮流，展現獨特個人風格"
                       />
-                      <span className="text-sm text-gray-700">啟用輪播</span>
-                    </label>
-                  </div>
-
-                  {homeConfigFormData.heroCarouselEnabled && (
-                    <div className="space-y-4">
-                      {/* 輪播速度設置 */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            輪播速度（毫秒）
-                          </label>
-                          <input
-                            type="number"
-                            min="1000"
-                            max="10000"
-                            step="500"
-                            value={homeConfigFormData.heroCarouselSpeed}
-                            onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselSpeed: parseInt(e.target.value) || 3000 })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                            placeholder="3000"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            建議值：2000-5000 毫秒（2-5秒）
-                          </p>
-                        </div>
-                        <div className="flex items-end">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={homeConfigFormData.heroCarouselAutoPlay}
-                              onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselAutoPlay: e.target.checked })}
-                              className="mr-2"
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">按鈕文字 *</label>
+                      <input
+                        type="text"
+                        value={homeConfigFormData.heroButtonText}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonText: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        placeholder="瀏覽商品"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">按鈕連結 *</label>
+                      <input
+                        type="text"
+                        value={homeConfigFormData.heroButtonLink}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonLink: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        placeholder="/products"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">背景圖片</label>
+                      {/* 拖拽上傳區域 */}
+                      <div
+                        onDrop={(e) => handleImageDrop(e, 'hero')}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDragEnter={(e) => e.preventDefault()}
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pink-500 transition-colors cursor-pointer"
+                        onClick={() => document.getElementById('hero-image-upload')?.click()}
+                      >
+                        <input
+                          id="hero-image-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleImageFileSelect(e, 'hero')}
+                        />
+                        {homeConfigFormData.heroBackgroundImage ? (
+                          <div>
+                            <img
+                              src={homeConfigFormData.heroBackgroundImage}
+                              alt="預覽"
+                              className="w-full h-48 object-cover rounded-md mb-2"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
                             />
-                            <span className="text-sm text-gray-700">自動播放</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* 輪播圖片管理 */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          輪播圖片（最多 10 張，可拖拽排序）
-                        </label>
-                        <p className="text-xs text-gray-500 mb-3">
-                          已添加 {homeConfigFormData.heroCarouselImages.length} / 10 張圖片
-                        </p>
-
-                        {/* 已添加的圖片列表 */}
-                        {homeConfigFormData.heroCarouselImages.length > 0 && (
-                          <div className="mb-4">
-                            <DndContext
-                              sensors={sensors}
-                              collisionDetection={closestCenter}
-                              onDragEnd={handleCarouselImagesDragEnd}
-                            >
-                              <SortableContext
-                                items={homeConfigFormData.heroCarouselImages}
-                                strategy={verticalListSortingStrategy}
-                              >
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                  {homeConfigFormData.heroCarouselImages.map((imageUrl, index) => (
-                                    <SortableItem key={imageUrl} id={imageUrl}>
-                                      <div className="relative group">
-                                        <div className="relative aspect-video overflow-hidden rounded-lg border-2 border-gray-200">
-                                          <img
-                                            src={imageUrl}
-                                            alt={`輪播圖 ${index + 1}`}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              (e.target as HTMLImageElement).style.display = 'none';
-                                            }}
-                                          />
-                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <button
-                                              type="button"
-                                              onClick={async () => {
-                                                const newImages = homeConfigFormData.heroCarouselImages.filter(url => url !== imageUrl);
-                                                setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-                                                await handleAutoSave({ heroCarouselImages: newImages });
-                                              }}
-                                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                                            >
-                                              刪除
-                                            </button>
-                                          </div>
-                                        </div>
-                                        <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                          {index + 1}
-                                        </div>
-                                      </div>
-                                    </SortableItem>
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
+                            <p className="text-sm text-gray-600">點擊或拖拽圖片到此處更換</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                              <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <p className="mt-2 text-sm text-gray-600">拖拽圖片到此處或點擊上傳</p>
+                            <p className="text-xs text-gray-500 mt-1">支持 JPG、PNG、GIF 格式</p>
                           </div>
                         )}
+                      </div>
+                      {/* 也可以手動輸入 URL */}
+                      <input
+                        type="url"
+                        value={homeConfigFormData.heroBackgroundImage}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: e.target.value })}
+                        className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        placeholder="或直接輸入圖片 URL"
+                      />
+                    </div>
+                  </div>
 
-                        {/* 添加圖片 */}
-                        <div className="space-y-3">
-                          {/* 拖拽上傳區域 */}
+                  {/* Hero 輪播設置 */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-md font-semibold">Hero 輪播功能</h4>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={homeConfigFormData.heroCarouselEnabled}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselEnabled: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">啟用輪播</span>
+                      </label>
+                    </div>
+
+                    {homeConfigFormData.heroCarouselEnabled && (
+                      <div className="space-y-4">
+                        {/* 輪播速度設置 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              輪播速度（毫秒）
+                            </label>
+                            <input
+                              type="number"
+                              min="1000"
+                              max="10000"
+                              step="500"
+                              value={homeConfigFormData.heroCarouselSpeed}
+                              onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselSpeed: parseInt(e.target.value) || 3000 })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                              placeholder="3000"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              建議值：2000-5000 毫秒（2-5秒）
+                            </p>
+                          </div>
+                          <div className="flex items-end">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={homeConfigFormData.heroCarouselAutoPlay}
+                                onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselAutoPlay: e.target.checked })}
+                                className="mr-2"
+                              />
+                              <span className="text-sm text-gray-700">自動播放</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* 輪播圖片管理 */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            輪播圖片（最多 10 張，可拖拽排序）
+                          </label>
+                          <p className="text-xs text-gray-500 mb-3">
+                            已添加 {homeConfigFormData.heroCarouselImages.length} / 10 張圖片
+                          </p>
+
+                          {/* 已添加的圖片列表 */}
+                          {homeConfigFormData.heroCarouselImages.length > 0 && (
+                            <div className="mb-4">
+                              <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleCarouselImagesDragEnd}
+                              >
+                                <SortableContext
+                                  items={homeConfigFormData.heroCarouselImages}
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {homeConfigFormData.heroCarouselImages.map((imageUrl, index) => (
+                                      <SortableItem key={imageUrl} id={imageUrl}>
+                                        <div className="relative group">
+                                          <div className="relative aspect-video overflow-hidden rounded-lg border-2 border-gray-200">
+                                            <img
+                                              src={imageUrl}
+                                              alt={`輪播圖 ${index + 1}`}
+                                              className="w-full h-full object-cover"
+                                              onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                              }}
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                              <button
+                                                type="button"
+                                                onClick={async () => {
+                                                  const newImages = homeConfigFormData.heroCarouselImages.filter(url => url !== imageUrl);
+                                                  setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+                                                  await handleAutoSave({ heroCarouselImages: newImages });
+                                                }}
+                                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+                                              >
+                                                刪除
+                                              </button>
+                                            </div>
+                                          </div>
+                                          <p className="text-xs text-gray-500 mt-1 text-center">第 {index + 1} 張</p>
+                                        </div>
+                                      </SortableItem>
+                                    ))}
+                                  </div>
+                                </SortableContext>
+                              </DndContext>
+                            </div>
+                          )}
+
+                          {/* 上傳輪播圖片 */}
                           <div
-                            onDrop={(e) => handleCarouselImageDrop(e)}
+                            onDrop={handleCarouselImageDrop}
                             onDragOver={(e) => e.preventDefault()}
                             onDragEnter={(e) => e.preventDefault()}
-                            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                              homeConfigFormData.heroCarouselImages.length >= 10
-                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                : 'border-gray-300 hover:border-pink-500 cursor-pointer'
-                            }`}
-                            onClick={() => {
-                              if (homeConfigFormData.heroCarouselImages.length < 10) {
-                                document.getElementById('carousel-image-upload')?.click();
-                              }
-                            }}
+                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pink-500 transition-colors cursor-pointer"
+                            onClick={() => document.getElementById('carousel-image-upload')?.click()}
                           >
                             <input
                               id="carousel-image-upload"
@@ -2126,197 +2181,422 @@ const Admin = () => {
                               accept="image/*"
                               multiple
                               className="hidden"
-                              onChange={(e) => handleCarouselImageFileSelect(e)}
+                              onChange={handleCarouselImageFileSelect}
                             />
                             <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                               <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                            <p className="mt-2 text-sm text-gray-600">
-                              {homeConfigFormData.heroCarouselImages.length >= 10
-                                ? '已達上限（10張）'
-                                : '拖拽圖片到此處或點擊上傳（可多選）'}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">支持 JPG、PNG、GIF 格式</p>
-                          </div>
-
-                          {/* 手動輸入 URL */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              或直接輸入圖片 URL
-                            </label>
-                            <div className="flex gap-2">
-                              <input
-                                type="url"
-                                id="carousel-image-url-input"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                                placeholder="https://example.com/image.jpg"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const input = e.target as HTMLInputElement;
-                                    const url = input.value.trim();
-                                    if (url && homeConfigFormData.heroCarouselImages.length < 10) {
-                                      if (!homeConfigFormData.heroCarouselImages.includes(url)) {
-                                        const newImages = [...homeConfigFormData.heroCarouselImages, url];
-                                        setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-                                        input.value = '';
-                                      } else {
-                                        alert('此圖片已存在');
-                                      }
-                                    } else if (homeConfigFormData.heroCarouselImages.length >= 10) {
-                                      alert('最多只能添加 10 張圖片');
-                                    }
-                                  }
-                                }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const input = document.getElementById('carousel-image-url-input') as HTMLInputElement;
-                                  const url = input.value.trim();
-                                  if (url && homeConfigFormData.heroCarouselImages.length < 10) {
-                                    if (!homeConfigFormData.heroCarouselImages.includes(url)) {
-                                      const newImages = [...homeConfigFormData.heroCarouselImages, url];
-                                      setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-                                      input.value = '';
-                                    } else {
-                                      alert('此圖片已存在');
-                                    }
-                                  } else if (homeConfigFormData.heroCarouselImages.length >= 10) {
-                                    alert('最多只能添加 10 張圖片');
-                                  }
-                                }}
-                                className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-md"
-                              >
-                                添加
-                              </button>
-                            </div>
+                            <p className="mt-2 text-sm text-gray-600">拖拽圖片到此處或點擊上傳</p>
+                            <p className="text-xs text-gray-500 mt-1">支持批量上傳，最多 10 張</p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+                    )}
+                  </div>
+                </CollapsibleSection>
 
-              {/* ========== 顏色與布局設置 ========== */}
-              <div className="bg-white shadow-lg rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">顏色主題</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">主色</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={homeConfigFormData.primaryColor}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
-                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={homeConfigFormData.primaryColor}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      />
+                {/* ========== 顏色主題 ========== */}
+                <CollapsibleSection
+                  id="section-colors"
+                  title="顏色主題"
+                  description="設置網站的主色調和漸變顏色"
+                  icon="🎨"
+                  defaultOpen={activeHomepageSection === 'colors'}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">主色</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={homeConfigFormData.primaryColor}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
+                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={homeConfigFormData.primaryColor}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">輔助色</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={homeConfigFormData.secondaryColor}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
+                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={homeConfigFormData.secondaryColor}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">漸變起始色</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={homeConfigFormData.gradientFrom}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
+                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={homeConfigFormData.gradientFrom}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">漸變結束色</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={homeConfigFormData.gradientTo}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
+                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={homeConfigFormData.gradientTo}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">輔助色</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={homeConfigFormData.secondaryColor}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
-                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={homeConfigFormData.secondaryColor}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">漸變起始色</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={homeConfigFormData.gradientFrom}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
-                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={homeConfigFormData.gradientFrom}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">漸變結束色</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={homeConfigFormData.gradientTo}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
-                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={homeConfigFormData.gradientTo}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </CollapsibleSection>
 
-              {/* 布局設置（合併到顏色主題區塊下方） */}
-              <div className="bg-white shadow-lg rounded-lg p-6 mt-6">
-                <h3 className="text-lg font-semibold mb-4">布局設置</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ========== 布局設置 ========== */}
+                <CollapsibleSection
+                  id="section-layout"
+                  title="布局設置"
+                  description="設置首頁布局類型和顯示選項"
+                  icon="📐"
+                  defaultOpen={activeHomepageSection === 'layout'}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">布局類型</label>
+                      <select
+                        value={homeConfigFormData.layout}
+                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, layout: e.target.value as 'default' | 'compact' | 'wide' })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      >
+                        <option value="default">默認</option>
+                        <option value="compact">緊湊</option>
+                        <option value="wide">寬鬆</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={homeConfigFormData.showFeatures}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, showFeatures: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">顯示特色區塊</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={homeConfigFormData.showGallery}
+                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, showGallery: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">顯示精選商品畫廊</span>
+                      </label>
+                    </div>
+                  </div>
+                </CollapsibleSection>
+
+                {/* ========== 特色區塊管理 ========== */}
+                <CollapsibleSection
+                  id="section-features"
+                  title="特色區塊管理"
+                  description="自定義首頁特色區塊的內容、圖標和樣式"
+                  icon="⭐"
+                  defaultOpen={activeHomepageSection === 'features'}
+                >
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">布局類型</label>
-                    <select
-                      value={homeConfigFormData.layout}
-                      onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, layout: e.target.value as 'default' | 'compact' | 'wide' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                    <div className="flex justify-end mb-4">
+                      <button
+                        onClick={() => {
+                          setEditingFeatureIndex(null);
+                          setFeatureFormData({
+                            title: '',
+                            description: '',
+                            icon: '👗',
+                            imageUrl: '',
+                            gradientFrom: '#EC4899',
+                            gradientTo: '#8B5CF6',
+                          });
+                          setShowFeatureForm(true);
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-sm font-medium rounded-md shadow-sm"
+                      >
+                        + 新增特色區塊
+                      </button>
+                    </div>
+
+                {/* 特色區塊列表 */}
+                {homeConfigFormData.features.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">特色區塊列表（拖拽調整順序）</h4>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleFeaturesDragEnd}
                     >
-                      <option value="default">默認</option>
-                      <option value="compact">緊湊</option>
-                      <option value="wide">寬鬆</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={homeConfigFormData.showFeatures}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, showFeatures: e.target.checked })}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700">顯示特色區塊</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={homeConfigFormData.showGallery}
-                        onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, showGallery: e.target.checked })}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700">顯示精選商品畫廊</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
+                      <SortableContext
+                        items={homeConfigFormData.features.map((_, index) => `feature-${index}`)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-3">
+                          {homeConfigFormData.features.map((feature, index) => {
+                            const FeatureItem = () => {
+                              const {
+                                attributes,
+                                listeners,
+                                setNodeRef,
+                                transform,
+                                transition,
+                                isDragging,
+                              } = useSortable({ id: `feature-${index}` });
 
-              {/* ========== 區塊管理（順序、精選商品、自訂區塊） ========== */}
-              <div className="bg-white shadow-lg rounded-lg p-6">
-                <h3 className="text-lg font-semibold mb-4">區塊順序</h3>
-                <p className="text-sm text-gray-600 mb-4">拖拽調整首頁區塊的顯示順序</p>
+                              const style = {
+                                transform: CSS.Transform.toString(transform),
+                                transition,
+                                opacity: isDragging ? 0.5 : 1,
+                              };
+
+                              return (
+                                <div
+                                  ref={setNodeRef}
+                                  style={style}
+                                  {...attributes}
+                                  className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border-2 border-gray-200 hover:border-pink-300 transition-colors"
+                                >
+                                  <div className="flex items-center gap-4 flex-1">
+                                    <div
+                                      {...listeners}
+                                      className="w-5 h-5 cursor-move flex-shrink-0"
+                                      title="拖拽調整順序"
+                                    >
+                                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                      </svg>
+                                    </div>
+                                    <div 
+                                      className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl shadow-md"
+                                      style={{
+                                        background: `linear-gradient(to right, ${feature.gradientFrom}, ${feature.gradientTo})`,
+                                      }}
+                                    >
+                                      {feature.icon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h5 className="font-semibold text-gray-900 truncate">{feature.title}</h5>
+                                      <p className="text-sm text-gray-600 truncate">{feature.description}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setEditingFeatureIndex(index);
+                                        setFeatureFormData({
+                                          title: feature.title,
+                                          description: feature.description,
+                                          icon: feature.icon,
+                                          imageUrl: feature.imageUrl,
+                                          gradientFrom: feature.gradientFrom,
+                                          gradientTo: feature.gradientTo,
+                                        });
+                                        setShowFeatureForm(true);
+                                      }}
+                                      className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                                      title="編輯特色區塊"
+                                    >
+                                      編輯
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(`確定要刪除「${feature.title}」嗎？`)) {
+                                          const newFeatures = homeConfigFormData.features.filter((_, i) => i !== index);
+                                          setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
+                                          await handleAutoSave({ features: newFeatures });
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors shadow-sm"
+                                      title="刪除特色區塊"
+                                    >
+                                      刪除
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            };
+                            return <FeatureItem key={index} />;
+                          })}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                )}
+
+                {/* 特色區塊編輯表單 */}
+                {showFeatureForm && (
+                  <div className="mt-6 p-6 bg-gray-50 rounded-lg border-2 border-pink-300">
+                    <h4 className="text-md font-semibold mb-4">
+                      {editingFeatureIndex !== null ? '編輯特色區塊' : '新增特色區塊'}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">標題 *</label>
+                        <input
+                          type="text"
+                          value={featureFormData.title}
+                          onChange={(e) => setFeatureFormData({ ...featureFormData, title: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="例如：時尚精選"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">圖標 *</label>
+                        <input
+                          type="text"
+                          value={featureFormData.icon}
+                          onChange={(e) => setFeatureFormData({ ...featureFormData, icon: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="例如：👗"
+                          maxLength={2}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">輸入一個 emoji 圖標</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">描述 *</label>
+                        <textarea
+                          value={featureFormData.description}
+                          onChange={(e) => setFeatureFormData({ ...featureFormData, description: e.target.value })}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="例如：精選最新流行女裝，涵蓋各種風格、尺碼和場合"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">背景圖片 URL</label>
+                        <input
+                          type="url"
+                          value={featureFormData.imageUrl}
+                          onChange={(e) => setFeatureFormData({ ...featureFormData, imageUrl: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          placeholder="https://images.unsplash.com/photo-..."
+                        />
+                        <p className="text-xs text-gray-500 mt-1">可選，留空則使用漸變背景</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">漸變起始色</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={featureFormData.gradientFrom}
+                            onChange={(e) => setFeatureFormData({ ...featureFormData, gradientFrom: e.target.value })}
+                            className="h-10 w-20 border border-gray-300 rounded"
+                          />
+                          <input
+                            type="text"
+                            value={featureFormData.gradientFrom}
+                            onChange={(e) => setFeatureFormData({ ...featureFormData, gradientFrom: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                            placeholder="#EC4899"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">漸變結束色</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={featureFormData.gradientTo}
+                            onChange={(e) => setFeatureFormData({ ...featureFormData, gradientTo: e.target.value })}
+                            className="h-10 w-20 border border-gray-300 rounded"
+                          />
+                          <input
+                            type="text"
+                            value={featureFormData.gradientTo}
+                            onChange={(e) => setFeatureFormData({ ...featureFormData, gradientTo: e.target.value })}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                            placeholder="#8B5CF6"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex gap-3">
+                      <button
+                        onClick={async () => {
+                          if (!featureFormData.title || !featureFormData.description || !featureFormData.icon) {
+                            alert('請填寫所有必填欄位');
+                            return;
+                          }
+
+                          const newFeatures = [...homeConfigFormData.features];
+                          if (editingFeatureIndex !== null) {
+                            newFeatures[editingFeatureIndex] = { ...featureFormData };
+                          } else {
+                            newFeatures.push({ ...featureFormData });
+                          }
+
+                          setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
+                          await handleAutoSave({ features: newFeatures });
+                          setShowFeatureForm(false);
+                          setEditingFeatureIndex(null);
+                          alert(editingFeatureIndex !== null ? '特色區塊已更新' : '特色區塊已添加');
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium rounded-md shadow-sm"
+                      >
+                        {editingFeatureIndex !== null ? '更新' : '添加'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowFeatureForm(false);
+                          setEditingFeatureIndex(null);
+                          setFeatureFormData({
+                            title: '',
+                            description: '',
+                            icon: '👗',
+                            imageUrl: '',
+                            gradientFrom: '#EC4899',
+                            gradientTo: '#8B5CF6',
+                          });
+                        }}
+                        className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                )}
+                  </div>
+                </CollapsibleSection>
+
+                {/* ========== 區塊順序 ========== */}
+                <CollapsibleSection
+                  id="section-sections"
+                  title="區塊順序"
+                  description="拖拽調整首頁區塊的顯示順序"
+                  icon="📋"
+                  defaultOpen={activeHomepageSection === 'sections'}
+                >
+                  <div>
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -2358,12 +2638,18 @@ const Admin = () => {
                     </div>
                   </SortableContext>
                 </DndContext>
-              </div>
+                  </div>
+                </CollapsibleSection>
 
-              {/* 精選商品設置（合併到區塊管理區塊） */}
-              <div className="bg-white shadow-lg rounded-lg p-6 mt-6">
-                <h3 className="text-lg font-semibold mb-4">精選商品</h3>
-                <p className="text-sm text-gray-600 mb-4">選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序</p>
+                {/* ========== 精選商品 ========== */}
+                <CollapsibleSection
+                  id="section-products"
+                  title="精選商品"
+                  description="選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序"
+                  icon="🛍️"
+                  defaultOpen={activeHomepageSection === 'products'}
+                >
+                  <div>
                 {products.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">暫無商品，請先添加商品</p>
                 ) : (
@@ -2403,7 +2689,7 @@ const Admin = () => {
                                     opacity: isDragging ? 0.5 : 1,
                                   };
 
-                                  return (
+                                return (
                                     <div
                                       ref={setNodeRef}
                                       style={style}
@@ -2416,8 +2702,8 @@ const Admin = () => {
                                         title="拖拽調整順序"
                                       >
                                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                                        </svg>
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                      </svg>
                                       </div>
                                       <img
                                         src={product.image_url || 'https://via.placeholder.com/50x50'}
@@ -2436,8 +2722,8 @@ const Admin = () => {
                                           if (confirm(`確定要移除「${product.name}」嗎？`)) {
                                             try {
                                               const newIds = homeConfigFormData.featuredProductIds.filter(id => id !== productId);
-                                              setHomeConfigFormData({
-                                                ...homeConfigFormData,
+                                          setHomeConfigFormData({
+                                            ...homeConfigFormData,
                                                 featuredProductIds: newIds,
                                               });
                                               await handleAutoSave({ featuredProductIds: newIds });
@@ -2454,7 +2740,7 @@ const Admin = () => {
                                         刪除
                                       </button>
                                     </div>
-                                  );
+                                );
                                 };
 
                                 return <FeaturedProductItem key={productId} />;
@@ -2518,15 +2804,19 @@ const Admin = () => {
                     )}
                   </>
                 )}
-              </div>
-
-              {/* 自訂區塊管理 */}
-              <div className="bg-white shadow-lg rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">自訂區塊</h3>
-                    <p className="text-sm text-gray-600 mt-1">新增和管理自訂首頁區塊</p>
                   </div>
+                </CollapsibleSection>
+
+                {/* ========== 自訂區塊管理 ========== */}
+                <CollapsibleSection
+                  id="section-custom"
+                  title="自訂區塊管理"
+                  description="新增和管理自訂首頁區塊"
+                  icon="🧩"
+                  defaultOpen={activeHomepageSection === 'custom'}
+                >
+                  <div>
+                    <div className="flex justify-end mb-4">
                   <button
                     type="button"
                     onClick={() => {
@@ -2684,10 +2974,9 @@ const Admin = () => {
                     <p>暫無自訂區塊，點擊「新增區塊」開始創建</p>
                   </div>
                 )}
-              </div>
 
-              {/* 自訂區塊表單 */}
-              {showCustomBlockForm && (
+                {/* 自訂區塊表單 */}
+                {showCustomBlockForm && (
                 <div className="bg-white shadow-lg rounded-lg p-6 border-2 border-pink-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">
@@ -2951,18 +3240,21 @@ const Admin = () => {
                   </div>
                 </div>
               )}
+                  </div>
+                </CollapsibleSection>
 
-              {/* 提交按鈕 */}
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="submit"
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
-                >
-                  保存設置
-                </button>
-              </div>
-            </form>
-          )}
+                {/* 提交按鈕 */}
+                <div className="flex justify-end space-x-4 mt-6">
+                  <button
+                    type="submit"
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
+                  >
+                    保存設置
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>
