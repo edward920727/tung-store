@@ -366,7 +366,13 @@ class FirestoreService {
     } catch (error: any) {
       // 如果索引不存在，使用備用方案：先查詢再排序
       if (error.code === 'failed-precondition' || error.message?.includes('index')) {
-        console.warn('Firestore 索引未創建，使用備用查詢方案');
+        // 只在開發環境顯示警告
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(
+            'Firestore 索引未創建，使用備用查詢方案。',
+            '請查看 FIRESTORE_INDEX_SETUP.md 了解如何創建索引以提升性能。'
+          );
+        }
         const q = query(
           collection(db, 'orders'),
           where('user_id', '==', userId)

@@ -75,11 +75,11 @@ const Home = () => {
   };
 
   // 使用配置或默認值
-  const heroTitle = config?.heroTitle || '歡迎來到小童服飾';
-  const heroSubtitle = config?.heroSubtitle || '發現優質童裝，享受便捷購物體驗';
-  const heroButtonText = config?.heroButtonText || '瀏覽商品';
+  const heroTitle = config?.heroTitle || '時尚女裝精品店';
+  const heroSubtitle = config?.heroSubtitle || '發現最新時尚潮流，展現獨特個人風格';
+  const heroButtonText = config?.heroButtonText || '探索商品';
   const heroButtonLink = config?.heroButtonLink || '/products';
-  const heroBackgroundImage = config?.heroBackgroundImage || 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=1920&q=80';
+  const heroBackgroundImage = config?.heroBackgroundImage || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80';
   const heroCarouselEnabled = config?.heroCarouselEnabled || false;
   const heroCarouselImages = config?.heroCarouselImages || [];
   const heroCarouselSpeed = config?.heroCarouselSpeed || 3000;
@@ -91,9 +91,9 @@ const Home = () => {
   const showGallery = config?.showGallery !== undefined ? config.showGallery : true;
   const sectionOrder = config?.sectionOrder || ['hero', 'features', 'gallery'];
   const features = config?.features || [
-    { title: '豐富商品', description: '瀏覽我們精心挑選的童裝，涵蓋各種款式、尺碼和風格', icon: '🛍️', imageUrl: 'https://images.unsplash.com/photo-1503919005314-30d9339471c3?w=800&q=80', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
-    { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=80', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
-    { title: '安全可靠', description: '安全的支付系統和訂單管理，讓您購物無憂', icon: '🔒', imageUrl: 'https://images.unsplash.com/photo-1511988617509-a57c8a288659?w=800&q=80', gradientFrom: '#10B981', gradientTo: '#059669' },
+    { title: '時尚精選', description: '精選最新流行女裝，涵蓋各種風格、尺碼和場合', icon: '👗', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
+    { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
+    { title: '品質保證', description: '優質面料與精緻工藝，讓您穿出自信與美麗', icon: '✨', imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', gradientFrom: '#10B981', gradientTo: '#059669' },
   ];
 
   // Hero 輪播狀態

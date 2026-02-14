@@ -22,6 +22,90 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { SortableItem } from '../components/SortableItem';
 
+// 範例商品數據
+const EXAMPLE_PRODUCTS = [
+  {
+    name: '優雅氣質長袖連衣裙',
+    description: '經典優雅的長袖連衣裙，採用優質面料，適合各種正式場合。修身剪裁，展現女性優雅氣質。精緻細節設計，讓您在任何場合都散發自信魅力。',
+    price: 1280,
+    stock: 50,
+    category: '連衣裙',
+    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
+  },
+  {
+    name: '簡約百搭白襯衫',
+    description: '經典白襯衫，簡約百搭，適合職場和日常穿搭。優質棉質面料，舒適透氣。精緻剪裁，展現專業與優雅。',
+    price: 680,
+    stock: 80,
+    category: '上衣',
+    image_url: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&q=80'
+  },
+  {
+    name: '舒適休閒短袖T恤',
+    description: '柔軟舒適的休閒T恤，多種顏色可選。適合日常休閒穿搭，輕鬆自在。優質面料，親膚舒適。',
+    price: 380,
+    stock: 100,
+    category: '上衣',
+    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80'
+  },
+  {
+    name: '時尚高腰闊腿褲',
+    description: '時尚高腰設計，闊腿剪裁，修飾腿型。優質面料，舒適透氣，適合多種場合。展現優雅氣質與時尚品味。',
+    price: 980,
+    stock: 60,
+    category: '褲裝',
+    image_url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80'
+  },
+  {
+    name: '溫柔針織開衫外套',
+    description: '柔軟針織面料，溫柔優雅。適合春秋季節，可搭配各種內搭，展現溫柔氣質。舒適保暖，時尚百搭。',
+    price: 890,
+    stock: 45,
+    category: '外套',
+    image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80'
+  },
+  {
+    name: 'A字半身裙',
+    description: '經典A字版型，修飾腰臀線條。多種顏色可選，適合搭配各種上衣，展現優雅氣質。優質面料，舒適貼身。',
+    price: 750,
+    stock: 70,
+    category: '裙裝',
+    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
+  },
+  {
+    name: '修身彈力牛仔褲',
+    description: '經典牛仔褲，修身剪裁，彈力面料。百搭單品，適合各種場合和風格。優質牛仔面料，耐穿舒適。',
+    price: 880,
+    stock: 90,
+    category: '褲裝',
+    image_url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80'
+  },
+  {
+    name: '經典風衣外套',
+    description: '經典風衣設計，防風防雨。優質面料，精緻工藝，適合春秋季節，展現優雅氣質。多種顏色可選。',
+    price: 1580,
+    stock: 35,
+    category: '外套',
+    image_url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80'
+  },
+  {
+    name: '優雅無袖連衣裙',
+    description: '清爽無袖設計，適合夏季穿著。優雅剪裁，展現女性魅力。優質面料，舒適透氣，適合各種場合。',
+    price: 980,
+    stock: 55,
+    category: '連衣裙',
+    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
+  },
+  {
+    name: '時尚條紋T恤',
+    description: '經典條紋設計，時尚百搭。優質面料，舒適親膚。適合日常休閒穿搭，展現青春活力。',
+    price: 420,
+    stock: 85,
+    category: '上衣',
+    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80'
+  }
+];
+
 const Admin = () => {
   const { firebaseUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'coupons' | 'membership' | 'users' | 'homepage'>('products');
@@ -31,6 +115,8 @@ const Admin = () => {
   const [membershipLevels, setMembershipLevels] = useState<MembershipLevel[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [showImportButton, setShowImportButton] = useState(false);
   
   // 首頁配置相關狀態
   const [homePageConfig, setHomePageConfig] = useState<HomePageConfig | null>(null);
@@ -54,7 +140,7 @@ const Admin = () => {
     featuredProductIds: [] as string[],
     sectionOrder: ['hero', 'features', 'gallery'] as string[],
     features: [
-      { title: '豐富商品', description: '瀏覽我們精心挑選的童裝，涵蓋各種款式、尺碼和風格', icon: '🛍️', imageUrl: '', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
+      { title: '時尚精選', description: '瀏覽我們精心挑選的女裝，涵蓋各種款式、尺碼和風格', icon: '👗', imageUrl: '', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
       { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: '', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
       { title: '安全可靠', description: '安全的支付系統和訂單管理，讓您購物無憂', icon: '🔒', imageUrl: '', gradientFrom: '#10B981', gradientTo: '#059669' },
     ] as Array<{ title: string; description: string; icon: string; imageUrl: string; gradientFrom: string; gradientTo: string }>,
@@ -550,6 +636,51 @@ const Admin = () => {
     }
   };
 
+  // 批量導入範例商品
+  const handleImportExampleProducts = async () => {
+    if (!confirm(`確定要導入 ${EXAMPLE_PRODUCTS.length} 個範例商品嗎？這將在您的商品列表中添加這些商品。`)) {
+      return;
+    }
+
+    setImporting(true);
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+
+    try {
+      for (const product of EXAMPLE_PRODUCTS) {
+        try {
+          await firestoreService.createProduct(product);
+          results.success++;
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push(`${product.name}: ${error.message || '未知錯誤'}`);
+          console.error(`導入商品失敗 [${product.name}]:`, error);
+        }
+      }
+
+      // 顯示結果
+      if (results.failed === 0) {
+        alert(`✅ 成功導入 ${results.success} 個範例商品！`);
+      } else {
+        alert(
+          `導入完成：\n✅ 成功: ${results.success} 個\n❌ 失敗: ${results.failed} 個\n\n失敗詳情：\n${results.errors.join('\n')}`
+        );
+      }
+
+      // 刷新商品列表
+      fetchProducts();
+    } catch (error) {
+      console.error('批量導入失敗:', error);
+      alert('批量導入過程中發生錯誤，請查看控制台');
+    } finally {
+      setImporting(false);
+      setShowImportButton(false);
+    }
+  };
+
   const handleCouponSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -886,8 +1017,26 @@ const Admin = () => {
 
       {activeTab === 'products' && (
         <div>
-          <div className="mb-4 flex justify-between">
-            <h2 className="text-xl font-semibold">商品列表</h2>
+          <div className="mb-4 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <h2 
+                className="text-xl font-semibold cursor-pointer select-none"
+                onDoubleClick={() => setShowImportButton(!showImportButton)}
+                title="雙擊此標題顯示/隱藏導入按鈕"
+              >
+                商品列表
+              </h2>
+              {showImportButton && (
+                <button
+                  onClick={handleImportExampleProducts}
+                  disabled={importing}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-md transition-colors shadow-sm"
+                  title="導入10個女裝範例商品"
+                >
+                  {importing ? '導入中...' : '📥 導入範例資料'}
+                </button>
+              )}
+            </div>
             <button
               onClick={() => {
                 setEditingProduct(null);
@@ -1757,7 +1906,7 @@ const Admin = () => {
                       onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroTitle: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="歡迎來到小童服飾"
+                      placeholder="時尚女裝精品店"
                     />
                   </div>
                   <div>
@@ -1768,7 +1917,7 @@ const Admin = () => {
                       onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroSubtitle: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      placeholder="發現優質童裝，享受便捷購物體驗"
+                      placeholder="發現最新時尚潮流，展現獨特個人風格"
                     />
                   </div>
                   <div>

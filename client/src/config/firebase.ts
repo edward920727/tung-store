@@ -25,9 +25,15 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 // Initialize Analytics (only in browser environment)
+// 注意：如果遇到網絡錯誤，可以暫時禁用 Analytics
 let analytics;
 if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app);
+  try {
+    analytics = getAnalytics(app);
+  } catch (error) {
+    console.warn('Firebase Analytics 初始化失敗（可以忽略）:', error);
+    analytics = null;
+  }
 }
 
 export { app, analytics };

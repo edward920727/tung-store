@@ -47,7 +47,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex items-center px-2 py-2 text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent hover:from-pink-700 hover:to-purple-700 transition-all">
-              小童服飾
+              時尚女裝
             </Link>
             {/* 桌面端導航 */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">

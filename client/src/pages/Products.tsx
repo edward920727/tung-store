@@ -49,7 +49,7 @@ const Products = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">商品列表</h1>
-        <p className="text-gray-600">探索我們精心挑選的優質童裝</p>
+        <p className="text-gray-600">探索我們精心挑選的時尚女裝</p>
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
