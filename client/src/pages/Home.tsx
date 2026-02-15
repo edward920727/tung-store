@@ -102,7 +102,6 @@ const Home = () => {
   const heroCarouselImages = useMemo(() => config?.heroCarouselImages || [], [config?.heroCarouselImages]);
   const heroCarouselSpeed = useMemo(() => config?.heroCarouselSpeed || 3000, [config?.heroCarouselSpeed]);
   const heroCarouselAutoPlay = useMemo(() => config?.heroCarouselAutoPlay !== undefined ? config.heroCarouselAutoPlay : true, [config?.heroCarouselAutoPlay]);
-  const primaryColor = useMemo(() => config?.primaryColor || '#EC4899', [config?.primaryColor]);
   const gradientFrom = useMemo(() => config?.gradientFrom || '#EC4899', [config?.gradientFrom]);
   const gradientTo = useMemo(() => config?.gradientTo || '#8B5CF6', [config?.gradientTo]);
   const showFeatures = useMemo(() => config?.showFeatures !== undefined ? config.showFeatures : true, [config?.showFeatures]);

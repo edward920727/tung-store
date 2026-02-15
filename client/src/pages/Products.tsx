@@ -152,7 +152,7 @@ const Products = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-auto">
-          {organizedProducts.map((item, index) => {
+          {organizedProducts.map((item) => {
             if (item.isFeatured) {
               // 滿版大圖：跨越多列
               return (
