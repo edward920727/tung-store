@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { firestoreService, HomePageConfig, Product, CustomBlock } from '../services/firestore';
+import { SEO } from '../components/SEO';
 
 const Home = () => {
   const [config, setConfig] = useState<HomePageConfig | null>(null);
@@ -517,13 +518,22 @@ const Home = () => {
   };
 
   return (
-    <div className="relative min-h-screen">
-      {sectionOrder.map((sectionId) => (
-        <div key={sectionId}>
-          {renderSection(sectionId)}
-        </div>
-      ))}
-    </div>
+    <>
+      <SEO
+        title={heroTitle}
+        description={heroSubtitle}
+        image={heroCarouselEnabled && heroCarouselImages.length > 0 
+          ? heroCarouselImages[0] 
+          : heroBackgroundImage}
+      />
+      <div className="relative min-h-screen">
+        {sectionOrder.map((sectionId) => (
+          <div key={sectionId}>
+            {renderSection(sectionId)}
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 

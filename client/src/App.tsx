@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import { SkeletonLoader } from './components/SkeletonLoader';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // 代碼分割：動態導入頁面組件
 const Home = lazy(() => import('./pages/Home'));
@@ -20,17 +21,18 @@ const Coupons = lazy(() => import('./pages/Coupons'));
 
 function App() {
   return (
-    <AuthProvider>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/30 to-purple-50/30">
-          <Navbar />
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><SkeletonLoader /></div>}>
-            <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/30 to-purple-50/30">
+            <Navbar />
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><SkeletonLoader /></div>}>
+              <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetail />} />
@@ -85,11 +87,12 @@ function App() {
                 }
               />
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </div>
-      </Router>
-    </AuthProvider>
+              </Routes>
+            </Suspense>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

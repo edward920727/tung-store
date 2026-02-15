@@ -3,6 +3,7 @@ import { firestoreService, Product } from '../services/firestore';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { ProductCard } from '../components/ProductCard';
 import { useDebounce } from '../hooks/useDebounce';
+import { SEO } from '../components/SEO';
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,11 +51,17 @@ const Products = () => {
   }, [selectedCategory, debouncedSearchTerm]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">商品列表</h1>
-        <p className="text-gray-600">探索我們精心挑選的時尚女裝</p>
-      </div>
+    <>
+      <SEO
+        title="商品列表 - 時尚女裝精品店"
+        description="探索我們精心挑選的時尚女裝，涵蓋各種風格和場合。優質面料，精緻工藝，展現獨特個人風格。"
+        keywords="女裝,時尚,服裝,購物,商品列表"
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">商品列表</h1>
+          <p className="text-gray-600">探索我們精心挑選的時尚女裝</p>
+        </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -95,7 +102,8 @@ const Products = () => {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
