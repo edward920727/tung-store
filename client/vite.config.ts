@@ -6,13 +6,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // 啟用壓縮
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // 生產環境移除 console
-        drop_debugger: true,
-      },
+    // 使用 esbuild 進行壓縮（Vite 默認，更快且無需額外依賴）
+    minify: 'esbuild',
+    // esbuild 選項
+    esbuild: {
+      drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
     },
     // 優化 chunk 大小
     chunkSizeWarningLimit: 1000,
