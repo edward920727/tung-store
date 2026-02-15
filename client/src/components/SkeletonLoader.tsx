@@ -10,34 +10,32 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type = 'card', c
     switch (type) {
       case 'product':
         return (
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
-            <div className="w-full h-64 bg-gray-200"></div>
-            <div className="p-5">
-              <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
-              <div className="flex justify-between items-center">
-                <div className="h-6 bg-gray-200 rounded w-24"></div>
-                <div className="h-4 bg-gray-200 rounded w-16"></div>
-              </div>
+          <div className="overflow-hidden">
+            {/* 圖片骨架 - 專業閃動效果 */}
+            <div className="relative overflow-hidden aspect-[3/4] mb-3">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]"></div>
+            </div>
+            {/* 文字骨架 */}
+            <div className="space-y-2">
+              <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] rounded w-3/4"></div>
+              <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] rounded w-1/2"></div>
             </div>
           </div>
         );
       
       case 'product-list':
         return (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {Array.from({ length: count }).map((_, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
-                <div className="w-full h-64 bg-gray-200"></div>
-                <div className="p-5">
-                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
-                  <div className="flex justify-between items-center">
-                    <div className="h-6 bg-gray-200 rounded w-24"></div>
-                    <div className="h-4 bg-gray-200 rounded w-16"></div>
-                  </div>
+              <div key={index} className="overflow-hidden">
+                {/* 圖片骨架 - 專業閃動效果 */}
+                <div className="relative overflow-hidden aspect-[3/4] mb-3">
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]"></div>
+                </div>
+                {/* 文字骨架 */}
+                <div className="space-y-2">
+                  <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] rounded w-3/4"></div>
+                  <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite] rounded w-1/2"></div>
                 </div>
               </div>
             ))}
@@ -55,7 +53,9 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type = 'card', c
       
       case 'image':
         return (
-          <div className="w-full h-64 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="w-full h-64 relative overflow-hidden rounded-lg">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-[shimmer_1.5s_ease-in-out_infinite]"></div>
+          </div>
         );
       
       case 'card':

@@ -29,7 +29,7 @@ function App() {
             v7_relativeSplatPath: true,
           }}
         >
-          <div className="min-h-screen bg-gradient-to-br from-gray-50 via-pink-50/30 to-purple-50/30">
+          <div className="min-h-screen bg-[#faf9f7]">
             <Navbar />
             <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><SkeletonLoader /></div>}>
               <Routes>

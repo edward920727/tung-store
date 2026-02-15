@@ -5,6 +5,7 @@ import { firestoreService, Product } from '../services/firestore';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { OptimizedImage } from '../components/OptimizedImage';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -146,10 +147,10 @@ const ProductDetail = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <img
+            <OptimizedImage
               src={product.image_url || 'https://via.placeholder.com/600x600'}
               alt={product.name}
-              loading="lazy"
+              loading="eager"
               className="w-full rounded-lg shadow-lg"
             />
           </div>

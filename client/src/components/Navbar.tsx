@@ -102,14 +102,14 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="bg-white shadow-md sticky top-0 z-50">
+      <nav className="bg-[#faf9f7] border-b border-[#e8e6e3] sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
         {/* 頂部欄 */}
         <div className="border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-12">
               {/* Logo */}
               <Link to="/" className="flex items-center">
-                <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="text-2xl font-light text-gray-700">
                   時尚女裝
                 </span>
               </Link>

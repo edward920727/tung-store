@@ -2218,9 +2218,17 @@ const Admin = () => {
                                               <button
                                                 type="button"
                                                 onClick={async () => {
-                                                  const newImages = homeConfigFormData.heroCarouselImages.filter(url => url !== imageUrl);
-                                                  setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-                                                  await handleAutoSave({ heroCarouselImages: newImages });
+                                                  if (window.confirm('確定要刪除這張輪播圖片嗎？')) {
+                                                    try {
+                                                      const newImages = homeConfigFormData.heroCarouselImages.filter(url => url !== imageUrl);
+                                                      setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
+                                                      await handleAutoSave({ heroCarouselImages: newImages });
+                                                      alert('已刪除輪播圖片');
+                                                    } catch (error) {
+                                                      console.error('刪除失敗:', error);
+                                                      alert('刪除失敗，請重試');
+                                                    }
+                                                  }
                                                 }}
                                                 className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
                                               >
@@ -2504,10 +2512,16 @@ const Admin = () => {
                                     </button>
                                     <button
                                       onClick={async () => {
-                                        if (confirm(`確定要刪除「${feature.title}」嗎？`)) {
-                                          const newFeatures = homeConfigFormData.features.filter((_, i) => i !== index);
-                                          setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
-                                          await handleAutoSave({ features: newFeatures });
+                                        if (window.confirm(`確定要刪除「${feature.title}」嗎？`)) {
+                                          try {
+                                            const newFeatures = homeConfigFormData.features.filter((_, i) => i !== index);
+                                            setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
+                                            await handleAutoSave({ features: newFeatures });
+                                            alert('已刪除特色區塊');
+                                          } catch (error) {
+                                            console.error('刪除失敗:', error);
+                                            alert('刪除失敗，請重試');
+                                          }
                                         }
                                       }}
                                       className="px-3 py-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors shadow-sm"
@@ -2795,11 +2809,11 @@ const Admin = () => {
                                         onClick={async (e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-                                          if (confirm(`確定要移除「${product.name}」嗎？`)) {
+                                          if (window.confirm(`確定要移除「${product.name}」嗎？`)) {
                                             try {
                                               const newIds = homeConfigFormData.featuredProductIds.filter(id => id !== productId);
-                                          setHomeConfigFormData({
-                                            ...homeConfigFormData,
+                                              setHomeConfigFormData({
+                                                ...homeConfigFormData,
                                                 featuredProductIds: newIds,
                                               });
                                               await handleAutoSave({ featuredProductIds: newIds });
@@ -3015,10 +3029,15 @@ const Admin = () => {
                                       onClick={async (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        if (confirm(`確定要刪除「${block.title || `區塊 (${block.type})`}」嗎？`)) {
+                                        if (window.confirm(`確定要刪除「${block.title || `區塊 (${block.type})`}」嗎？`)) {
                                           try {
                                             const updatedBlocks = (homePageConfig?.customBlocks || []).filter(b => b.id !== block.id);
                                             const updatedSectionOrder = homeConfigFormData.sectionOrder.filter(id => id !== block.id);
+                                            // 同步更新本地狀態
+                                            setHomeConfigFormData({
+                                              ...homeConfigFormData,
+                                              sectionOrder: updatedSectionOrder,
+                                            });
                                             await firestoreService.updateHomePageConfig({
                                               customBlocks: updatedBlocks,
                                               sectionOrder: updatedSectionOrder,

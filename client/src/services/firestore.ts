@@ -50,6 +50,8 @@ export interface Product {
   price: number;
   stock: number;
   image_url: string;
+  image_urls?: string[]; // 多張圖片，用於懸停切換
+  is_featured?: boolean; // 是否為滿版大圖
   category: string;
   created_at: Timestamp;
 }

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { firestoreService, Product } from '../services/firestore';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { ProductCard } from '../components/ProductCard';
+import { FeaturedImageCard } from '../components/FeaturedImageCard';
 import { useDebounce } from '../hooks/useDebounce';
 import { SEO } from '../components/SEO';
 
@@ -64,6 +65,46 @@ const Products = () => {
     }
   }, [selectedCategory, debouncedSearchTerm]);
 
+  // 組織商品列表：分離滿版大圖和普通商品，並計算不規則排版
+  const organizedProducts = useMemo(() => {
+    const featured: Product[] = [];
+    const regular: Product[] = [];
+    
+    products.forEach((product) => {
+      if (product.is_featured) {
+        featured.push(product);
+      } else {
+        regular.push(product);
+      }
+    });
+
+    // 混合排列：每 6-8 個普通商品後插入一個滿版大圖
+    const mixed: Array<{ product: Product; isFeatured: boolean }> = [];
+    let regularIndex = 0;
+    let featuredIndex = 0;
+    let counter = 0;
+
+    while (regularIndex < regular.length || featuredIndex < featured.length) {
+      // 每 7 個普通商品後，插入一個滿版大圖（如果還有）
+      if (counter > 0 && counter % 7 === 0 && featuredIndex < featured.length) {
+        mixed.push({ product: featured[featuredIndex], isFeatured: true });
+        featuredIndex++;
+      } else if (regularIndex < regular.length) {
+        mixed.push({ product: regular[regularIndex], isFeatured: false });
+        regularIndex++;
+      } else if (featuredIndex < featured.length) {
+        // 如果普通商品用完了，把剩餘的滿版大圖都加上
+        mixed.push({ product: featured[featuredIndex], isFeatured: true });
+        featuredIndex++;
+      } else {
+        break;
+      }
+      counter++;
+    }
+
+    return mixed;
+  }, [products]);
+
   return (
     <>
       <SEO
@@ -73,8 +114,8 @@ const Products = () => {
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-2">商品列表</h1>
-          <p className="text-gray-600">探索我們精心挑選的時尚女裝</p>
+          <h1 className="text-4xl font-light text-gray-700 mb-2">商品列表</h1>
+          <p className="text-gray-500 font-light">探索我們精心挑選的時尚女裝</p>
         </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -107,13 +148,26 @@ const Products = () => {
         <SkeletonLoader type="product-list" count={8} />
       ) : products.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-lg text-gray-500">沒有找到商品</div>
+          <div className="text-lg text-gray-500 font-light">沒有找到商品</div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-auto">
+          {organizedProducts.map((item, index) => {
+            if (item.isFeatured) {
+              // 滿版大圖：跨越多列
+              return (
+                <div
+                  key={item.product.id}
+                  className="col-span-2 sm:col-span-3 lg:col-span-4 xl:col-span-5"
+                >
+                  <FeaturedImageCard product={item.product} />
+                </div>
+              );
+            } else {
+              // 普通商品卡片
+              return <ProductCard key={item.product.id} product={item.product} />;
+            }
+          })}
         </div>
       )}
       </div>
