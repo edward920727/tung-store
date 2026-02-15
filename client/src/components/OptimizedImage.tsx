@@ -25,31 +25,49 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    setImageSrc(src);
-    setIsLoading(true);
-    setHasError(false);
-  }, [src]);
+    // 當 src 改變時重置狀態
+    if (imageSrc !== src) {
+      setImageSrc(src);
+      setIsLoading(true);
+      setHasError(false);
+    }
+  }, [src, imageSrc]);
 
-  const handleLoad = () => {
-    setIsLoading(false);
-    onLoad?.();
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    // 確保圖片已經完全加載
+    const img = e.currentTarget;
+    if (img.complete && img.naturalHeight !== 0) {
+      setIsLoading(false);
+      onLoad?.();
+    }
   };
 
   const handleError = () => {
     setIsLoading(false);
     if (imageSrc !== fallbackSrc) {
+      // 嘗試使用回退圖片
       setImageSrc(fallbackSrc);
-      setHasError(true);
+      setHasError(false);
+      setIsLoading(true);
     } else {
+      // 如果回退圖片也失敗了
       setHasError(true);
+      setIsLoading(false);
+      onError?.();
     }
-    onError?.();
   };
 
+  // 檢查圖片是否已經加載完成（用於緩存中的圖片）
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalHeight !== 0) {
+      setIsLoading(false);
+    }
+  }, [imageSrc]);
+
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div className="relative overflow-hidden">
       {isLoading && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center z-10">
           <svg
             className="w-12 h-12 text-gray-400"
             fill="none"
@@ -65,19 +83,25 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           </svg>
         </div>
       )}
-      <img
-        ref={imgRef}
-        src={imageSrc}
-        alt={alt}
-        loading={loading}
-        onLoad={handleLoad}
-        onError={handleError}
-        className={`transition-opacity duration-300 ${
-          isLoading ? 'opacity-0' : 'opacity-100'
-        } ${hasError ? 'object-cover' : ''} ${className}`}
-        decoding="async"
-        fetchPriority={loading === 'eager' ? 'high' : 'auto'}
-      />
+      {hasError ? (
+        <div className="w-full h-full bg-gray-200 flex items-center justify-center min-h-[256px]">
+          <span className="text-gray-400 text-sm">圖片加載失敗</span>
+        </div>
+      ) : (
+        <img
+          ref={imgRef}
+          src={imageSrc}
+          alt={alt}
+          loading={loading}
+          onLoad={handleLoad}
+          onError={handleError}
+          className={`${className} ${
+            isLoading ? 'opacity-0' : 'opacity-100'
+          } transition-opacity duration-300`}
+          decoding="async"
+          {...(loading === 'eager' ? { fetchpriority: 'high' as const } : {})}
+        />
+      )}
     </div>
   );
 };

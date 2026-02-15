@@ -14,7 +14,7 @@ export const ProductCard = memo<ProductCardProps>(({ product }) => {
       className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
       aria-label={`查看 ${product.name} 的詳情`}
     >
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden h-64">
         <OptimizedImage
           src={product.image_url || 'https://images.unsplash.com/photo-1503919005314-30d9339471c3?w=400&q=80'}
           alt={product.name}

@@ -23,6 +23,20 @@ const Products = () => {
     fetchProducts();
   }, [selectedCategory, debouncedSearchTerm]);
 
+  // 從 URL 參數讀取搜索和分類
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const searchParam = params.get('search');
+    const categoryParam = params.get('category');
+    
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, []);
+
   const fetchCategories = async () => {
     try {
       const cats = await firestoreService.getCategories();

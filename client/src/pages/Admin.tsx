@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ImageCropper from '../components/ImageCropper';
-import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig, CustomBlock, uploadImage } from '../services/firestore';
+import { firestoreService, Product, Order, Coupon, MembershipLevel, User, HomePageConfig, CustomBlock, uploadImage, downloadAndUploadImage } from '../services/firestore';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -191,8 +191,10 @@ const Admin = () => {
     price: '',
     stock: '',
     image_url: '',
+    external_image_url: '', // 外部圖片 URL 輸入框
     category: ''
   });
+  const [uploadingExternalImage, setUploadingExternalImage] = useState(false);
   const [couponFormData, setCouponFormData] = useState({
     code: '',
     description: '',
@@ -635,6 +637,35 @@ const Admin = () => {
     setProductFormData({ ...productFormData, image_url: croppedImageUrl });
   };
 
+  // 處理外部圖片 URL 上傳
+  const handleExternalImageUpload = async () => {
+    if (!productFormData.external_image_url.trim()) {
+      alert('請輸入外部圖片 URL');
+      return;
+    }
+
+    if (!firebaseUser) {
+      alert('請先登入管理員帳號');
+      return;
+    }
+
+    setUploadingExternalImage(true);
+    try {
+      const uploadedUrl = await downloadAndUploadImage(productFormData.external_image_url);
+      setProductFormData({
+        ...productFormData,
+        image_url: uploadedUrl,
+        external_image_url: '', // 清空外部 URL 輸入框
+      });
+      alert('外部圖片已成功下載並上傳到 Firebase Storage！');
+    } catch (error: any) {
+      console.error('上傳外部圖片失敗:', error);
+      alert('上傳失敗: ' + (error.message || '未知錯誤'));
+    } finally {
+      setUploadingExternalImage(false);
+    }
+  };
+
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -654,7 +685,7 @@ const Admin = () => {
       }
       setShowProductForm(false);
       setEditingProduct(null);
-      setProductFormData({ name: '', description: '', price: '', stock: '', image_url: '', category: '' });
+      setProductFormData({ name: '', description: '', price: '', stock: '', image_url: '', external_image_url: '', category: '' });
       fetchProducts();
     } catch (error) {
       console.error('保存商品失敗:', error);
@@ -754,10 +785,11 @@ const Admin = () => {
     setEditingProduct(product);
     setProductFormData({
       name: product.name,
-      description: product.description,
+      description: product.description || '',
       price: product.price.toString(),
       stock: product.stock.toString(),
       image_url: product.image_url,
+      external_image_url: '',
       category: product.category
     });
     setShowProductForm(true);
@@ -1066,7 +1098,7 @@ const Admin = () => {
             <button
               onClick={() => {
                 setEditingProduct(null);
-                setProductFormData({ name: '', description: '', price: '', stock: '', image_url: '', category: '' });
+                setProductFormData({ name: '', description: '', price: '', stock: '', image_url: '', external_image_url: '', category: '' });
                 setShowProductForm(true);
               }}
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-4 py-2 rounded-md shadow-lg"
@@ -1151,15 +1183,51 @@ const Admin = () => {
                         </button>
                       </div>
                     )}
-                    <div className="mt-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">或直接輸入圖片URL</label>
-                      <input
-                        type="url"
-                        value={productFormData.image_url}
-                        onChange={(e) => setProductFormData({ ...productFormData, image_url: e.target.value })}
-                        placeholder="https://example.com/image.jpg"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                      />
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          外部圖片 URL（自動下載並上傳到 Firebase Storage）
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="url"
+                            value={productFormData.external_image_url}
+                            onChange={(e) => setProductFormData({ ...productFormData, external_image_url: e.target.value })}
+                            placeholder="https://example.com/image.jpg"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                            disabled={uploadingExternalImage}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleExternalImageUpload();
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleExternalImageUpload}
+                            disabled={uploadingExternalImage || !productFormData.external_image_url.trim()}
+                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors whitespace-nowrap"
+                          >
+                            {uploadingExternalImage ? '上傳中...' : '下載並上傳'}
+                          </button>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          輸入外部圖片 URL，系統會自動下載並上傳到 Firebase Storage，確保圖片永久有效
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          或直接輸入圖片 URL（不推薦，可能失效）
+                        </label>
+                        <input
+                          type="url"
+                          value={productFormData.image_url}
+                          onChange={(e) => setProductFormData({ ...productFormData, image_url: e.target.value })}
+                          placeholder="https://example.com/image.jpg 或 Firebase Storage URL"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

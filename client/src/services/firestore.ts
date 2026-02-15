@@ -929,3 +929,98 @@ export const deleteImage = async (path: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * 從外部 URL 下載圖片並上傳到 Firebase Storage
+ * @param imageUrl 外部圖片 URL
+ * @param path Firebase Storage 路徑（可選，默認為 products/ 目錄）
+ * @returns 上傳後的圖片 URL
+ */
+export const downloadAndUploadImage = async (
+  imageUrl: string,
+  path?: string
+): Promise<string> => {
+  try {
+    // 驗證 URL
+    if (!imageUrl || (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://'))) {
+      throw new Error('無效的圖片 URL');
+    }
+
+    // 檢查是否已經是 Firebase Storage URL（避免重複上傳）
+    if (imageUrl.includes('firebasestorage.googleapis.com') || imageUrl.includes('firebase')) {
+      console.log('圖片已經是 Firebase Storage URL，跳過上傳');
+      return imageUrl;
+    }
+
+    // 下載圖片
+    const response = await fetch(imageUrl, {
+      mode: 'cors',
+      headers: {
+        'Accept': 'image/*',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`無法下載圖片: ${response.status} ${response.statusText}`);
+    }
+
+    // 檢查 Content-Type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.startsWith('image/')) {
+      throw new Error('URL 指向的不是圖片文件');
+    }
+
+    // 獲取圖片數據
+    const blob = await response.blob();
+
+    // 檢查文件大小（限制為 10MB）
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (blob.size > maxSize) {
+      throw new Error('圖片大小不能超過 10MB');
+    }
+
+    // 生成文件名
+    const urlParts = imageUrl.split('/');
+    const originalFileName = urlParts[urlParts.length - 1].split('?')[0] || 'image';
+    const fileExtension = originalFileName.split('.').pop() || 'jpg';
+    const sanitizedFileName = originalFileName
+      .replace(/[^a-zA-Z0-9.-]/g, '_')
+      .substring(0, 50);
+    
+    // 生成存儲路徑
+    const storagePath = path || `products/${Date.now()}_${Math.random().toString(36).substring(7)}_${sanitizedFileName}`;
+
+    // 上傳到 Firebase Storage
+    const storageRef = ref(storage, storagePath);
+    
+    // 設置上傳元數據
+    const metadata = {
+      contentType: blob.type || `image/${fileExtension}`,
+      cacheControl: 'public, max-age=31536000', // 緩存一年
+    };
+
+    // 上傳文件
+    await uploadBytes(storageRef, blob, metadata);
+    
+    // 獲取下載 URL
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    console.log('外部圖片已成功下載並上傳到 Firebase Storage:', downloadURL);
+    return downloadURL;
+  } catch (error: any) {
+    console.error('下載並上傳圖片失敗:', error);
+    
+    // 提供更友好的錯誤訊息
+    if (error.message) {
+      throw error;
+    } else if (error.code === 'storage/unauthorized') {
+      throw new Error('您沒有權限上傳圖片，請確認已登入管理員帳號');
+    } else if (error.code === 'storage/canceled') {
+      throw new Error('上傳已取消');
+    } else if (error.code === 'storage/unknown') {
+      throw new Error('上傳失敗，請檢查網絡連接或 Firebase Storage 配置');
+    } else {
+      throw new Error('下載並上傳圖片失敗，請稍後再試');
+    }
+  }
+};
