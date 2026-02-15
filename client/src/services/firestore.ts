@@ -288,6 +288,12 @@ class FirestoreService {
     await updateDoc(doc(db, 'products', productId), updates);
   }
 
+  async updateProductStock(productId: string, newStock: number): Promise<void> {
+    await updateDoc(doc(db, 'products', productId), { 
+      stock: Math.max(0, newStock) 
+    });
+  }
+
   async deleteProduct(productId: string): Promise<void> {
     await deleteDoc(doc(db, 'products', productId));
   }

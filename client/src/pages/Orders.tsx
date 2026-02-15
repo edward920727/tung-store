@@ -135,7 +135,13 @@ const Orders = () => {
             <div
               key={order.id}
               className="bg-white shadow-lg rounded-xl p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-100"
-              onClick={() => fetchOrderDetail(order.id)}
+              onClick={() => {
+                if (selectedOrder && selectedOrder.id === order.id) {
+                  setSelectedOrder(null);
+                } else {
+                  fetchOrderDetail(order.id);
+                }
+              }}
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -177,6 +183,26 @@ const Orders = () => {
                         </div>
                       </div>
                     ))}
+                    {/* 顯示優惠券信息 */}
+                    {selectedOrder.original_amount && selectedOrder.original_amount > selectedOrder.total_amount && (
+                      <>
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                          <span className="text-gray-600">原始金額</span>
+                          <span className="text-gray-600">NT${selectedOrder.original_amount.toFixed(2)}</span>
+                        </div>
+                        {selectedOrder.discount_amount && selectedOrder.discount_amount > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-green-600">
+                              優惠券折扣
+                              {selectedOrder.coupon_code && (
+                                <span className="ml-2 text-xs">({selectedOrder.coupon_code})</span>
+                              )}
+                            </span>
+                            <span className="text-green-600 font-semibold">-NT${selectedOrder.discount_amount.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
                     <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                       <span className="font-bold text-lg text-gray-900">總計</span>
                       <span className="font-bold text-xl text-blue-600">NT${order.total_amount.toFixed(2)}</span>

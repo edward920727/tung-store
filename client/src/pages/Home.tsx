@@ -127,8 +127,34 @@ const Home = () => {
     return config?.gradientTo || '#8B5CF6';
   }, [previewColors, config?.gradientTo]);
 
+  const showFeatures = useMemo(() => config?.showFeatures !== undefined ? config.showFeatures : true, [config?.showFeatures]);
   const showGallery = useMemo(() => config?.showGallery !== undefined ? config.showGallery : true, [config?.showGallery]);
-  const sectionOrder = useMemo(() => config?.sectionOrder || ['hero', 'gallery'], [config?.sectionOrder]);
+  
+  // 確保 sectionOrder 包含必要的區塊
+  const sectionOrder = useMemo(() => {
+    const baseOrder = config?.sectionOrder || ['hero', 'features', 'gallery'];
+    // 如果 showFeatures 為 true 但 sectionOrder 中沒有 'features'，則添加它
+    if (showFeatures && !baseOrder.includes('features')) {
+      // 在 'hero' 之後插入 'features'
+      const heroIndex = baseOrder.indexOf('hero');
+      if (heroIndex >= 0) {
+        const newOrder = [...baseOrder];
+        newOrder.splice(heroIndex + 1, 0, 'features');
+        return newOrder;
+      }
+      return [...baseOrder, 'features'];
+    }
+    // 如果 showFeatures 為 false 但 sectionOrder 中有 'features'，則移除它
+    if (!showFeatures && baseOrder.includes('features')) {
+      return baseOrder.filter(id => id !== 'features');
+    }
+    return baseOrder;
+  }, [config?.sectionOrder, showFeatures]);
+  const features = useMemo(() => config?.features || [
+    { title: '時尚精選', description: '精選最新流行女裝，涵蓋各種風格、尺碼和場合', icon: '👗', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
+    { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
+    { title: '品質保證', description: '優質面料與精緻工藝，讓您穿出自信與美麗', icon: '✨', imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', gradientFrom: '#10B981', gradientTo: '#059669' },
+  ], [config?.features]);
 
   // Hero 輪播狀態
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
@@ -308,6 +334,54 @@ const Home = () => {
     );
   };
 
+  // 渲染特色區塊
+  const renderFeatures = () => {
+    // 移除 showFeatures 檢查，因為在 renderSection 中已經檢查了
+    if (!features || features.length === 0) return null;
+    
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <h2 className="text-4xl font-light text-center mb-12 text-gray-700">
+          我們的特色
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <div
+              key={index}
+              className="relative overflow-hidden rounded-lg shadow-lg group hover:shadow-xl transition-all duration-300"
+            >
+              {/* 背景圖片 */}
+              {feature.imageUrl && (
+                <div
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 group-hover:opacity-30 transition-opacity duration-300"
+                  style={{ backgroundImage: `url(${feature.imageUrl})` }}
+                />
+              )}
+              
+              {/* 漸變背景 */}
+              <div
+                className="absolute inset-0 opacity-90"
+                style={{
+                  background: `linear-gradient(135deg, ${feature.gradientFrom || '#EC4899'}, ${feature.gradientTo || '#8B5CF6'})`,
+                }}
+              />
+              
+              {/* 內容 */}
+              <div className="relative z-10 p-8 text-center">
+                <div className="text-5xl mb-4">{feature.icon}</div>
+                <h3 className="text-2xl font-semibold text-white mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-white/90 font-light leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   // 渲染精選商品
   const renderGallery = () => {
@@ -457,6 +531,11 @@ const Home = () => {
     switch (sectionId) {
       case 'hero':
         return renderHero();
+      case 'features':
+        // 檢查 showFeatures 和 features 是否存在
+        if (!showFeatures) return null;
+        if (!features || features.length === 0) return null;
+        return renderFeatures();
       case 'gallery':
         return renderGallery();
       default:
@@ -474,11 +553,17 @@ const Home = () => {
           : heroBackgroundImage}
       />
       <div className="relative min-h-screen">
-        {sectionOrder.map((sectionId) => (
-          <div key={sectionId}>
-            {renderSection(sectionId)}
-          </div>
-        ))}
+        {sectionOrder.map((sectionId) => {
+          // 如果 sectionId 是 'features' 但 showFeatures 為 false，跳過渲染
+          if (sectionId === 'features' && !showFeatures) {
+            return null;
+          }
+          return (
+            <div key={sectionId}>
+              {renderSection(sectionId)}
+            </div>
+          );
+        })}
       </div>
     </>
   );

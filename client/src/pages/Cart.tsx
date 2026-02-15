@@ -165,8 +165,37 @@ const Cart = () => {
         return sum;
       }, 0);
 
+      // 如果使用了優惠券，在結帳前再次驗證
+      let finalDiscountAmount = discountAmount;
+      let finalAppliedCoupon = appliedCoupon;
+      
+      if (appliedCoupon) {
+        // 檢查用戶是否真的擁有這個優惠券
+        const userCoupon = userCoupons.find(uc => uc.coupon_id === appliedCoupon.id && !uc.used);
+        if (!userCoupon) {
+          showError('您沒有此優惠券，請重新應用');
+          setAppliedCoupon(null);
+          setDiscountAmount(0);
+          setCheckingOut(false);
+          return;
+        }
+
+        // 再次驗證優惠券是否仍然有效
+        const validation = await firestoreService.validateCoupon(appliedCoupon.code, originalAmount);
+        if (!validation.valid || !validation.coupon) {
+          showError(validation.message || '優惠券已失效，請移除後再試');
+          setAppliedCoupon(null);
+          setDiscountAmount(0);
+          setCheckingOut(false);
+          return;
+        }
+        
+        finalAppliedCoupon = validation.coupon;
+        finalDiscountAmount = validation.discount;
+      }
+
       // 計算最終金額（扣除折扣）
-      const finalAmount = Math.max(0, originalAmount - discountAmount);
+      const finalAmount = Math.max(0, originalAmount - finalDiscountAmount);
 
       if (finalAmount <= 0) {
         alert('訂單金額無效');
@@ -191,17 +220,24 @@ const Cart = () => {
         finalAmount,
         {
           originalAmount: originalAmount,
-          discountAmount: discountAmount,
-          couponCode: appliedCoupon?.code,
-          couponId: appliedCoupon?.id,
+          discountAmount: finalDiscountAmount,
+          couponCode: finalAppliedCoupon?.code,
+          couponId: finalAppliedCoupon?.id,
         }
       );
 
+      // 更新商品庫存
+      for (const item of cartItems) {
+        if (item.product) {
+          await firestoreService.updateProductStock(item.product_id, item.product.stock - item.quantity);
+        }
+      }
+
       // 如果使用了優惠券，標記為已使用
-      if (appliedCoupon) {
-        const userCoupon = userCoupons.find(uc => uc.coupon_id === appliedCoupon.id && !uc.used);
+      if (finalAppliedCoupon) {
+        const userCoupon = userCoupons.find(uc => uc.coupon_id === finalAppliedCoupon!.id && !uc.used);
         if (userCoupon) {
-          await firestoreService.markCouponAsUsed(userCoupon.id, appliedCoupon.id);
+          await firestoreService.markCouponAsUsed(userCoupon.id, finalAppliedCoupon.id);
         }
       }
 
