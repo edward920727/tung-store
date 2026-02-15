@@ -946,19 +946,28 @@ const Admin = () => {
   const handleCouponSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const couponData: Omit<Coupon, 'id' | 'created_at'> = {
+      // 構建優惠券數據，過濾掉 undefined 值（Firestore 不支持 undefined）
+      const couponData: any = {
         code: couponFormData.code,
         description: couponFormData.description,
         discount_type: couponFormData.discount_type,
         discount_value: parseFloat(couponFormData.discount_value),
-        min_purchase: couponFormData.min_purchase ? parseFloat(couponFormData.min_purchase) : undefined,
-        max_discount: couponFormData.max_discount ? parseFloat(couponFormData.max_discount) : undefined,
         valid_from: Timestamp.fromDate(new Date(couponFormData.valid_from)),
         valid_until: Timestamp.fromDate(new Date(couponFormData.valid_until)),
-        usage_limit: couponFormData.usage_limit ? parseInt(couponFormData.usage_limit) : undefined,
         used_count: editingCoupon?.used_count || 0,
         is_active: couponFormData.is_active === 1,
       };
+
+      // 只在有值時添加可選字段
+      if (couponFormData.min_purchase && couponFormData.min_purchase.trim()) {
+        couponData.min_purchase = parseFloat(couponFormData.min_purchase);
+      }
+      if (couponFormData.max_discount && couponFormData.max_discount.trim()) {
+        couponData.max_discount = parseFloat(couponFormData.max_discount);
+      }
+      if (couponFormData.usage_limit && couponFormData.usage_limit.trim()) {
+        couponData.usage_limit = parseInt(couponFormData.usage_limit);
+      }
 
       if (editingCoupon) {
         await firestoreService.updateCoupon(editingCoupon.id, couponData);

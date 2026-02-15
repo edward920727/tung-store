@@ -13,6 +13,9 @@ const Coupons = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'available' | 'my'>('available');
   const { toasts, success, error: showError, removeToast } = useToast();
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimCode, setClaimCode] = useState('');
+  const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
     if (firebaseUser) {
@@ -53,6 +56,86 @@ const Coupons = () => {
     } catch (err: any) {
       console.error('領取優惠券失敗:', err);
       showError(err.message || '領取失敗，請稍後再試');
+    }
+  };
+
+  const handleOpenClaimModal = () => {
+    setShowClaimModal(true);
+    setClaimCode('');
+  };
+
+  const handleCloseClaimModal = () => {
+    setShowClaimModal(false);
+    setClaimCode('');
+  };
+
+  const handleClaimByCode = async () => {
+    if (!firebaseUser) {
+      showError('請先登錄');
+      return;
+    }
+
+    if (!claimCode.trim()) {
+      showError('請輸入優惠券代碼');
+      return;
+    }
+
+    setClaiming(true);
+    try {
+      // 根據代碼獲取優惠券
+      const coupon = await firestoreService.getCouponByCode(claimCode.trim().toUpperCase());
+      
+      if (!coupon) {
+        showError('優惠券代碼不存在');
+        setClaiming(false);
+        return;
+      }
+
+      // 檢查是否已經領取過
+      const alreadyClaimed = myCoupons.some(uc => uc.coupon_id === coupon.id && !uc.used);
+      if (alreadyClaimed) {
+        showError('您已經領取過此優惠券');
+        setClaiming(false);
+        return;
+      }
+
+      // 檢查優惠券是否有效
+      const now = new Date();
+      const validFrom = coupon.valid_from instanceof Timestamp 
+        ? coupon.valid_from.toDate() 
+        : new Date(coupon.valid_from);
+      const validUntil = coupon.valid_until instanceof Timestamp 
+        ? coupon.valid_until.toDate() 
+        : new Date(coupon.valid_until);
+
+      if (!coupon.is_active) {
+        showError('優惠券已停用');
+        setClaiming(false);
+        return;
+      }
+
+      if (now < validFrom || now > validUntil) {
+        showError('優惠券不在有效期內');
+        setClaiming(false);
+        return;
+      }
+
+      if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+        showError('優惠券已達使用上限');
+        setClaiming(false);
+        return;
+      }
+
+      // 領取優惠券
+      await firestoreService.claimCoupon(firebaseUser.uid, coupon.id);
+      success('優惠券領取成功！');
+      handleCloseClaimModal();
+      fetchData();
+    } catch (err: any) {
+      console.error('領取優惠券失敗:', err);
+      showError(err.message || '領取失敗，請稍後再試');
+    } finally {
+      setClaiming(false);
     }
   };
 
@@ -132,9 +215,23 @@ const Coupons = () => {
         {/* 可領取優惠券 */}
         {activeTab === 'available' && (
           <div>
+            <div className="mb-6 flex justify-end">
+              <button
+                onClick={handleOpenClaimModal}
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+              >
+                + 輸入代碼領取
+              </button>
+            </div>
             {availableCoupons.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-lg text-gray-500">目前沒有可領取的優惠券</p>
+                <p className="text-lg text-gray-500 mb-4">目前沒有可領取的優惠券</p>
+                <button
+                  onClick={handleOpenClaimModal}
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+                >
+                  + 輸入代碼領取
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -226,8 +323,8 @@ const Coupons = () => {
               <div className="text-center py-12">
                 <p className="text-lg text-gray-500 mb-4">您還沒有領取任何優惠券</p>
                 <button
-                  onClick={() => setActiveTab('available')}
-                  className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-md"
+                  onClick={handleOpenClaimModal}
+                  className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-md transition-colors"
                 >
                   去領取優惠券
                 </button>
@@ -343,6 +440,63 @@ const Coupons = () => {
           </div>
         )}
       </div>
+
+      {/* 領取優惠券彈窗 */}
+      {showClaimModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">輸入優惠券代碼</h2>
+              <button
+                onClick={handleCloseClaimModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={claiming}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                優惠券代碼
+              </label>
+              <input
+                type="text"
+                value={claimCode}
+                onChange={(e) => setClaimCode(e.target.value.toUpperCase())}
+                placeholder="請輸入優惠券代碼"
+                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none text-lg font-medium"
+                disabled={claiming}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !claiming) {
+                    handleClaimByCode();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseClaimModal}
+                disabled={claiming}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleClaimByCode}
+                disabled={claiming || !claimCode.trim()}
+                className="flex-1 py-2 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {claiming ? '領取中...' : '確認領取'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
