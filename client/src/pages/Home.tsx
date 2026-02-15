@@ -102,11 +102,34 @@ const Home = () => {
   const heroCarouselImages = useMemo(() => config?.heroCarouselImages || [], [config?.heroCarouselImages]);
   const heroCarouselSpeed = useMemo(() => config?.heroCarouselSpeed || 3000, [config?.heroCarouselSpeed]);
   const heroCarouselAutoPlay = useMemo(() => config?.heroCarouselAutoPlay !== undefined ? config.heroCarouselAutoPlay : true, [config?.heroCarouselAutoPlay]);
-  const gradientFrom = useMemo(() => config?.gradientFrom || '#EC4899', [config?.gradientFrom]);
-  const gradientTo = useMemo(() => config?.gradientTo || '#8B5CF6', [config?.gradientTo]);
+  // 檢查是否為預覽模式（從 URL 參數讀取顏色）
+  const previewColors = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('preview') === 'true') {
+        return {
+          primary: params.get('primary') || config?.primaryColor || '#EC4899',
+          gradientFrom: params.get('gradientFrom') || config?.gradientFrom || '#EC4899',
+          gradientTo: params.get('gradientTo') || config?.gradientTo || '#8B5CF6',
+        };
+      }
+    }
+    return null;
+  }, [config?.primaryColor, config?.gradientFrom, config?.gradientTo]);
+
+  const gradientFrom = useMemo(() => {
+    if (previewColors) return previewColors.gradientFrom;
+    return config?.gradientFrom || '#EC4899';
+  }, [previewColors, config?.gradientFrom]);
+  
+  const gradientTo = useMemo(() => {
+    if (previewColors) return previewColors.gradientTo;
+    return config?.gradientTo || '#8B5CF6';
+  }, [previewColors, config?.gradientTo]);
+
   const showFeatures = useMemo(() => config?.showFeatures !== undefined ? config.showFeatures : true, [config?.showFeatures]);
   const showGallery = useMemo(() => config?.showGallery !== undefined ? config.showGallery : true, [config?.showGallery]);
-  const sectionOrder = useMemo(() => config?.sectionOrder || ['hero', 'features', 'gallery'], [config?.sectionOrder]);
+  const sectionOrder = useMemo(() => config?.sectionOrder || ['hero', 'gallery'], [config?.sectionOrder]);
   const features = useMemo(() => config?.features || [
     { title: '時尚精選', description: '精選最新流行女裝，涵蓋各種風格、尺碼和場合', icon: '👗', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
     { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
@@ -291,43 +314,6 @@ const Home = () => {
     );
   };
 
-  // 渲染特色區塊
-  const renderFeatures = () => {
-    if (!showFeatures) return null;
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((feature, index) => (
-            <div key={index} className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <div 
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                  backgroundImage: feature.imageUrl ? `url(${feature.imageUrl})` : undefined,
-                  backgroundColor: feature.imageUrl ? undefined : '#f3f4f6',
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
-              </div>
-              <div className="relative p-8 h-80 flex flex-col justify-end">
-                <div 
-                  className="inline-flex items-center justify-center p-4 rounded-xl shadow-lg mb-4 w-16 h-16 text-2xl"
-                  style={{
-                    background: `linear-gradient(to right, ${feature.gradientFrom}, ${feature.gradientTo})`,
-                  }}
-                >
-                  {feature.icon}
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>
-                <p className="text-white/90 text-base leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   // 渲染精選商品
   const renderGallery = () => {
@@ -477,8 +463,6 @@ const Home = () => {
     switch (sectionId) {
       case 'hero':
         return renderHero();
-      case 'features':
-        return renderFeatures();
       case 'gallery':
         return renderGallery();
       default:

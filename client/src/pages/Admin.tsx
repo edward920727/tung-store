@@ -130,6 +130,7 @@ const Admin = () => {
   const [showImportButton, setShowImportButton] = useState(false);
   const [activeHomepageSection, setActiveHomepageSection] = useState<string>('hero');
   const [openHomepageSection, setOpenHomepageSection] = useState<string | null>('hero');
+  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('mobile');
   
   // 首頁配置相關狀態
   const [homePageConfig, setHomePageConfig] = useState<HomePageConfig | null>(null);
@@ -414,8 +415,6 @@ const Admin = () => {
       const newIndex = homeConfigFormData.sectionOrder.indexOf(over.id as string);
       const newOrder = arrayMove(homeConfigFormData.sectionOrder, oldIndex, newIndex);
       setHomeConfigFormData({ ...homeConfigFormData, sectionOrder: newOrder });
-      // 自動保存
-      handleAutoSave({ sectionOrder: newOrder });
     }
   };
 
@@ -427,8 +426,6 @@ const Admin = () => {
       const newIndex = homeConfigFormData.featuredProductIds.indexOf(over.id as string);
       const newOrder = arrayMove(homeConfigFormData.featuredProductIds, oldIndex, newIndex);
       setHomeConfigFormData({ ...homeConfigFormData, featuredProductIds: newOrder });
-      // 自動保存
-      handleAutoSave({ featuredProductIds: newOrder });
     }
   };
 
@@ -440,8 +437,6 @@ const Admin = () => {
       const overIndex = parseInt((over.id as string).replace('feature-', ''));
       const newFeatures = arrayMove(homeConfigFormData.features, activeIndex, overIndex);
       setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
-      // 自動保存
-      handleAutoSave({ features: newFeatures });
     }
   };
 
@@ -458,19 +453,33 @@ const Admin = () => {
         ...block,
         order: index,
       }));
-      await firestoreService.updateHomePageConfig({ customBlocks: updatedBlocks });
-      fetchHomePageConfig();
+      // 只更新本地狀態，不自動保存
+      if (homePageConfig) {
+        setHomePageConfig({ ...homePageConfig, customBlocks: updatedBlocks });
+      }
+      alert('區塊順序已更新，請點擊「保存」按鈕保存配置');
     }
   };
 
-  // 自動保存（拖拽後）
-  const handleAutoSave = async (updates: Partial<HomePageConfig>) => {
-    try {
-      if (homePageConfig) {
-        await firestoreService.updateHomePageConfig(updates);
+
+  // 更新預覽視窗的顏色
+  const updatePreviewColors = (primary: string, secondary: string, gradientFrom: string, gradientTo: string) => {
+    const iframe = document.getElementById('homepage-preview') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      try {
+        // 通過 postMessage 傳遞顏色信息
+        iframe.contentWindow.postMessage({
+          type: 'updateColors',
+          colors: {
+            primary: primary,
+            secondary: secondary,
+            gradientFrom: gradientFrom,
+            gradientTo: gradientTo,
+          }
+        }, '*');
+      } catch (error) {
+        console.error('更新預覽顏色失敗:', error);
       }
-    } catch (error) {
-      console.error('自動保存失敗:', error);
     }
   };
 
@@ -496,9 +505,8 @@ const Admin = () => {
           const url = await uploadImage(file, path);
           if (type === 'hero') {
             setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: url });
-            await handleAutoSave({ heroBackgroundImage: url });
           }
-          alert('圖片上傳成功！');
+          alert('圖片已上傳，請點擊「保存」按鈕保存配置');
         } catch (error: any) {
           console.error('圖片上傳失敗:', error);
           alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
@@ -531,9 +539,8 @@ const Admin = () => {
           const url = await uploadImage(file, path);
           if (type === 'hero') {
             setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: url });
-            await handleAutoSave({ heroBackgroundImage: url });
           }
-          alert('圖片上傳成功！');
+          alert('圖片已上傳，請點擊「保存」按鈕保存配置');
         } catch (error: any) {
           console.error('圖片上傳失敗:', error);
           alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
@@ -579,8 +586,7 @@ const Admin = () => {
         const urls = await Promise.all(uploadPromises);
         const newImages = [...homeConfigFormData.heroCarouselImages, ...urls];
         setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-        await handleAutoSave({ heroCarouselImages: newImages });
-        alert(`成功上傳 ${urls.length} 張圖片！`);
+        alert(`成功上傳 ${urls.length} 張圖片！請點擊「保存」按鈕保存配置`);
       } catch (error: any) {
         console.error('圖片上傳失敗:', error);
         alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
@@ -620,8 +626,7 @@ const Admin = () => {
         const urls = await Promise.all(uploadPromises);
         const newImages = [...homeConfigFormData.heroCarouselImages, ...urls];
         setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-        await handleAutoSave({ heroCarouselImages: newImages });
-        alert(`成功上傳 ${urls.length} 張圖片！`);
+        alert(`成功上傳 ${urls.length} 張圖片！請點擊「保存」按鈕保存配置`);
       } catch (error: any) {
         console.error('圖片上傳失敗:', error);
         alert('圖片上傳失敗: ' + (error.message || '未知錯誤，請檢查 Firebase Storage 配置'));
@@ -641,7 +646,6 @@ const Admin = () => {
       const newIndex = homeConfigFormData.heroCarouselImages.indexOf(over.id as string);
       const newOrder = arrayMove(homeConfigFormData.heroCarouselImages, oldIndex, newIndex);
       setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newOrder });
-      await handleAutoSave({ heroCarouselImages: newOrder });
     }
   };
 
@@ -2359,50 +2363,52 @@ const Admin = () => {
       )}
 
       {activeTab === 'homepage' && (
-        <div className="flex gap-6">
-          {/* 側邊導覽列 */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white shadow-lg rounded-lg p-4 sticky top-4">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">功能導覽</h3>
-              <nav className="space-y-1">
-                {[
-                  { id: 'hero', label: 'Hero 區域', icon: '🎯' },
-                  { id: 'colors', label: '顏色主題', icon: '🎨' },
-                  { id: 'layout', label: '布局設置', icon: '📐' },
-                  { id: 'features', label: '特色區塊', icon: '⭐' },
-                  { id: 'sections', label: '區塊順序', icon: '📋' },
-                  { id: 'products', label: '精選商品', icon: '🛍️' },
-                  { id: 'custom', label: '自訂區塊', icon: '🧩' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveHomepageSection(item.id);
-                      setOpenHomepageSection(item.id);
-                      // 滾動到對應區塊
-                      setTimeout(() => {
-                        const element = document.getElementById(`section-${item.id}`);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                      }, 100);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeHomepageSection === item.id
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 左邊：功能編輯區 */}
+          <div className="lg:col-span-1">
+            {/* 側邊導覽列 */}
+            <div className="w-full mb-4">
+              <div className="bg-white shadow-lg rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900">功能導覽</h3>
+                <nav className="space-y-1">
+                  {[
+                    { id: 'hero', label: 'Hero 區域', icon: '🎯' },
+                    { id: 'colors', label: '顏色主題', icon: '🎨' },
+                    { id: 'layout', label: '布局設置', icon: '📐' },
+                    { id: 'features', label: '特色區塊', icon: '⭐' },
+                    { id: 'sections', label: '區塊順序', icon: '📋' },
+                    { id: 'products', label: '精選商品', icon: '🛍️' },
+                    { id: 'custom', label: '自訂區塊', icon: '🧩' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveHomepageSection(item.id);
+                        setOpenHomepageSection(item.id);
+                        // 滾動到對應區塊
+                        setTimeout(() => {
+                          const element = document.getElementById(`section-${item.id}`);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeHomepageSection === item.id
+                          ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </div>
-          </div>
 
-          {/* 主要內容區域 */}
-          <div className="flex-1">
+            {/* 主要內容區域 */}
+            <div className="flex-1">
             {loading ? (
               <div className="text-center py-12">加載中...</div>
             ) : (
@@ -2603,8 +2609,7 @@ const Admin = () => {
                                                     try {
                                                       const newImages = homeConfigFormData.heroCarouselImages.filter(url => url !== imageUrl);
                                                       setHomeConfigFormData({ ...homeConfigFormData, heroCarouselImages: newImages });
-                                                      await handleAutoSave({ heroCarouselImages: newImages });
-                                                      alert('已刪除輪播圖片');
+                                                      alert('已刪除輪播圖片，請點擊「保存」按鈕保存配置');
                                                     } catch (error) {
                                                       console.error('刪除失敗:', error);
                                                       alert('刪除失敗，請重試');
@@ -2664,74 +2669,128 @@ const Admin = () => {
                   isOpen={openHomepageSection === 'colors'}
                   onToggle={() => setOpenHomepageSection(openHomepageSection === 'colors' ? null : 'colors')}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">主色</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={homeConfigFormData.primaryColor}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
-                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={homeConfigFormData.primaryColor}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, primaryColor: e.target.value })}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                        />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">主色（按鈕顏色）</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={homeConfigFormData.primaryColor}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, primaryColor: newColor });
+                              // 同步更新預覽
+                              updatePreviewColors(newColor, homeConfigFormData.secondaryColor, homeConfigFormData.gradientFrom, homeConfigFormData.gradientTo);
+                            }}
+                            className="w-20 h-12 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                          />
+                          <input
+                            type="text"
+                            value={homeConfigFormData.primaryColor}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, primaryColor: newColor });
+                              updatePreviewColors(newColor, homeConfigFormData.secondaryColor, homeConfigFormData.gradientFrom, homeConfigFormData.gradientTo);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            placeholder="#EC4899"
+                          />
+                        </div>
+                        <div className="mt-2 h-8 rounded-md" style={{ backgroundColor: homeConfigFormData.primaryColor }}></div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">輔助色</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={homeConfigFormData.secondaryColor}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: newColor });
+                              updatePreviewColors(homeConfigFormData.primaryColor, newColor, homeConfigFormData.gradientFrom, homeConfigFormData.gradientTo);
+                            }}
+                            className="w-20 h-12 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                          />
+                          <input
+                            type="text"
+                            value={homeConfigFormData.secondaryColor}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: newColor });
+                              updatePreviewColors(homeConfigFormData.primaryColor, newColor, homeConfigFormData.gradientFrom, homeConfigFormData.gradientTo);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            placeholder="#8B5CF6"
+                          />
+                        </div>
+                        <div className="mt-2 h-8 rounded-md" style={{ backgroundColor: homeConfigFormData.secondaryColor }}></div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">輔助色</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={homeConfigFormData.secondaryColor}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
-                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={homeConfigFormData.secondaryColor}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: e.target.value })}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">漸變起始色</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={homeConfigFormData.gradientFrom}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: newColor });
+                              updatePreviewColors(homeConfigFormData.primaryColor, homeConfigFormData.secondaryColor, newColor, homeConfigFormData.gradientTo);
+                            }}
+                            className="w-20 h-12 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                          />
+                          <input
+                            type="text"
+                            value={homeConfigFormData.gradientFrom}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: newColor });
+                              updatePreviewColors(homeConfigFormData.primaryColor, homeConfigFormData.secondaryColor, newColor, homeConfigFormData.gradientTo);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            placeholder="#EC4899"
+                          />
+                        </div>
+                        <div className="mt-2 h-8 rounded-md" style={{ backgroundColor: homeConfigFormData.gradientFrom }}></div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">漸變結束色</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={homeConfigFormData.gradientTo}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, gradientTo: newColor });
+                              updatePreviewColors(homeConfigFormData.primaryColor, homeConfigFormData.secondaryColor, homeConfigFormData.gradientFrom, newColor);
+                            }}
+                            className="w-20 h-12 border-2 border-gray-300 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                          />
+                          <input
+                            type="text"
+                            value={homeConfigFormData.gradientTo}
+                            onChange={(e) => {
+                              const newColor = e.target.value;
+                              setHomeConfigFormData({ ...homeConfigFormData, gradientTo: newColor });
+                              updatePreviewColors(homeConfigFormData.primaryColor, homeConfigFormData.secondaryColor, homeConfigFormData.gradientFrom, newColor);
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            placeholder="#8B5CF6"
+                          />
+                        </div>
+                        <div className="mt-2 h-8 rounded-md" style={{ backgroundColor: homeConfigFormData.gradientTo }}></div>
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">漸變起始色</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={homeConfigFormData.gradientFrom}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
-                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={homeConfigFormData.gradientFrom}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: e.target.value })}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">漸變結束色</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={homeConfigFormData.gradientTo}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
-                          className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          value={homeConfigFormData.gradientTo}
-                          onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, gradientTo: e.target.value })}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                        />
-                      </div>
+                    <div className="pt-2 border-t border-gray-200">
+                      <div className="text-sm text-gray-600 mb-2">漸變預覽：</div>
+                      <div 
+                        className="h-12 rounded-lg shadow-sm"
+                        style={{ 
+                          background: `linear-gradient(to right, ${homeConfigFormData.gradientFrom}, ${homeConfigFormData.gradientTo})` 
+                        }}
+                      ></div>
                     </div>
                   </div>
                 </CollapsibleSection>
@@ -2897,8 +2956,7 @@ const Admin = () => {
                                           try {
                                             const newFeatures = homeConfigFormData.features.filter((_, i) => i !== index);
                                             setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
-                                            await handleAutoSave({ features: newFeatures });
-                                            alert('已刪除特色區塊');
+                                            alert('已刪除特色區塊，請點擊「保存」按鈕保存配置');
                                           } catch (error) {
                                             console.error('刪除失敗:', error);
                                             alert('刪除失敗，請重試');
@@ -3025,10 +3083,9 @@ const Admin = () => {
                           }
 
                           setHomeConfigFormData({ ...homeConfigFormData, features: newFeatures });
-                          await handleAutoSave({ features: newFeatures });
                           setShowFeatureForm(false);
                           setEditingFeatureIndex(null);
-                          alert(editingFeatureIndex !== null ? '特色區塊已更新' : '特色區塊已添加');
+                          alert(editingFeatureIndex !== null ? '特色區塊已更新，請點擊「保存」按鈕保存配置' : '特色區塊已添加，請點擊「保存」按鈕保存配置');
                         }}
                         className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium rounded-md shadow-sm"
                       >
@@ -3197,8 +3254,7 @@ const Admin = () => {
                                                 ...homeConfigFormData,
                                                 featuredProductIds: newIds,
                                               });
-                                              await handleAutoSave({ featuredProductIds: newIds });
-                                              alert('已移除精選商品');
+                                              alert('已移除精選商品，請點擊「保存」按鈕保存配置');
                                             } catch (error) {
                                               console.error('移除失敗:', error);
                                               alert('移除失敗，請重試');
@@ -3419,12 +3475,11 @@ const Admin = () => {
                                               ...homeConfigFormData,
                                               sectionOrder: updatedSectionOrder,
                                             });
-                                            await firestoreService.updateHomePageConfig({
-                                              customBlocks: updatedBlocks,
-                                              sectionOrder: updatedSectionOrder,
-                                            });
-                                            alert('已刪除自訂區塊');
-                                            fetchHomePageConfig();
+                                            // 只更新本地狀態，不自動保存
+                                            if (homePageConfig) {
+                                              setHomePageConfig({ ...homePageConfig, customBlocks: updatedBlocks });
+                                            }
+                                            alert('已刪除自訂區塊，請點擊「保存」按鈕保存配置');
                                           } catch (error) {
                                             console.error('刪除失敗:', error);
                                             alert('刪除失敗，請重試');
@@ -3701,13 +3756,15 @@ const Admin = () => {
                             // 將新區塊加入 sectionOrder
                             const newSectionOrder = [...homeConfigFormData.sectionOrder, newBlock.id];
                             setHomeConfigFormData({ ...homeConfigFormData, sectionOrder: newSectionOrder });
-                            await firestoreService.updateHomePageConfig({ sectionOrder: newSectionOrder });
                           }
 
-                          await firestoreService.updateHomePageConfig({ customBlocks: updatedBlocks });
+                          // 只更新本地狀態，不自動保存
+                          if (homePageConfig) {
+                            setHomePageConfig({ ...homePageConfig, customBlocks: updatedBlocks });
+                          }
                           setShowCustomBlockForm(false);
                           setEditingCustomBlock(null);
-                          fetchHomePageConfig();
+                          alert(editingCustomBlock ? '自訂區塊已更新，請點擊「保存」按鈕保存配置' : '自訂區塊已新增，請點擊「保存」按鈕保存配置');
                         }}
                         className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-md shadow-md"
                       >
@@ -3731,6 +3788,81 @@ const Admin = () => {
                 </div>
               </form>
             )}
+            </div>
+          </div>
+
+          {/* 右邊：預覽視窗 */}
+          <div className="lg:col-span-1">
+            <div className="bg-white shadow-lg rounded-lg p-4 sticky top-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">即時預覽</h3>
+                <div className="flex items-center gap-2">
+                  {/* 預覽模式切換 */}
+                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('mobile')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        previewMode === 'mobile'
+                          ? 'bg-pink-500 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      📱 手機
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('desktop')}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        previewMode === 'desktop'
+                          ? 'bg-pink-500 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      💻 電腦
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const iframe = document.getElementById('homepage-preview') as HTMLIFrameElement;
+                      if (iframe) {
+                        iframe.src = iframe.src; // 重新載入預覽
+                      }
+                    }}
+                    className="text-sm text-pink-600 hover:text-pink-700 font-medium"
+                  >
+                    刷新
+                  </button>
+                </div>
+              </div>
+              <div 
+                className="border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-100 mx-auto"
+                style={previewMode === 'mobile' 
+                  ? { aspectRatio: '9/16', maxHeight: '80vh', width: '100%' }
+                  : { aspectRatio: '16/9', maxHeight: '80vh', width: '100%' }
+                }
+              >
+                <iframe
+                  id="homepage-preview"
+                  key={`preview-${previewMode}-${homeConfigFormData.primaryColor}-${homeConfigFormData.gradientFrom}-${homeConfigFormData.gradientTo}`}
+                  src={`/?preview=true&primary=${encodeURIComponent(homeConfigFormData.primaryColor)}&gradientFrom=${encodeURIComponent(homeConfigFormData.gradientFrom)}&gradientTo=${encodeURIComponent(homeConfigFormData.gradientTo)}`}
+                  className={`w-full h-full border-0 ${
+                    previewMode === 'mobile' 
+                      ? 'transform scale-75 origin-top-left'
+                      : 'transform scale-50 origin-top-left'
+                  }`}
+                  style={previewMode === 'mobile'
+                    ? { width: '133.33%', height: '133.33%' }
+                    : { width: '200%', height: '200%' }
+                  }
+                  title="首頁預覽"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                預覽比例：{previewMode === 'mobile' ? '手機版（9:16）' : '電腦版（16:9）'}
+              </p>
+            </div>
           </div>
         </div>
       )}
