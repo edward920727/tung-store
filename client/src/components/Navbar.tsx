@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { firestoreService, CartItem } from '../services/firestore';
 
 const Navbar = () => {
-  const { user, logout, firebaseUser, loading } = useAuth();
+  const { user, logout, firebaseUser } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

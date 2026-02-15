@@ -16,7 +16,7 @@ export const useImagePreload = (imageUrls: string[]): { loaded: number; total: n
     const images: HTMLImageElement[] = [];
 
     const loadImage = (url: string): Promise<void> => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
           loadedCount++;
