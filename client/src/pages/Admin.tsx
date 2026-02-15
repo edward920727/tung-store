@@ -21,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { SortableItem } from '../components/SortableItem';
-import { CollapsibleSection } from '../components/CollapsibleSection';
+import { SuccessAnimation } from '../components/SuccessAnimation';
 
 // 範例商品數據（包含懸停圖片，使用 Unsplash 無版權圖片）
 const EXAMPLE_PRODUCTS = [
@@ -129,11 +129,20 @@ const Admin = () => {
   const [importing, setImporting] = useState(false);
   const [showImportButton, setShowImportButton] = useState(false);
   const [activeHomepageSection, setActiveHomepageSection] = useState<string>('hero');
-  const [openHomepageSection, setOpenHomepageSection] = useState<string | null>('hero');
-  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('mobile');
+  const [previewMode, setPreviewMode] = useState<'mobile' | 'desktop'>('desktop');
+  const [savingSection, setSavingSection] = useState<string | null>(null);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   
   // 首頁配置相關狀態
   const [homePageConfig, setHomePageConfig] = useState<HomePageConfig | null>(null);
+  // 預設顏色值
+  const DEFAULT_COLORS = {
+    primaryColor: '#EC4899',
+    secondaryColor: '#8B5CF6',
+    gradientFrom: '#EC4899',
+    gradientTo: '#8B5CF6',
+  };
+
   const [homeConfigFormData, setHomeConfigFormData] = useState({
     heroTitle: '',
     heroSubtitle: '',
@@ -144,10 +153,10 @@ const Admin = () => {
     heroCarouselImages: [] as string[],
     heroCarouselSpeed: 3000,
     heroCarouselAutoPlay: true,
-    primaryColor: '#EC4899',
-    secondaryColor: '#8B5CF6',
-    gradientFrom: '#EC4899',
-    gradientTo: '#8B5CF6',
+    primaryColor: DEFAULT_COLORS.primaryColor,
+    secondaryColor: DEFAULT_COLORS.secondaryColor,
+    gradientFrom: DEFAULT_COLORS.gradientFrom,
+    gradientTo: DEFAULT_COLORS.gradientTo,
     layout: 'default' as 'default' | 'compact' | 'wide',
     showFeatures: true,
     showGallery: true,
@@ -356,6 +365,52 @@ const Admin = () => {
       console.error('獲取首頁配置失敗:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 單個功能面板的保存函數
+  const handleSaveSection = async (sectionId: string) => {
+    setSavingSection(sectionId);
+    try {
+      // 獲取當前所有配置，合併當前面板的數據
+      const currentConfig = homePageConfig || {} as HomePageConfig;
+      const configData: Partial<HomePageConfig> = {
+        ...currentConfig,
+        heroTitle: homeConfigFormData.heroTitle,
+        heroSubtitle: homeConfigFormData.heroSubtitle,
+        heroBackgroundImage: homeConfigFormData.heroBackgroundImage,
+        heroButtonText: homeConfigFormData.heroButtonText,
+        heroButtonLink: homeConfigFormData.heroButtonLink,
+        heroCarouselEnabled: homeConfigFormData.heroCarouselEnabled,
+        heroCarouselImages: homeConfigFormData.heroCarouselImages,
+        heroCarouselSpeed: homeConfigFormData.heroCarouselSpeed,
+        heroCarouselAutoPlay: homeConfigFormData.heroCarouselAutoPlay,
+        primaryColor: homeConfigFormData.primaryColor,
+        secondaryColor: homeConfigFormData.secondaryColor,
+        gradientFrom: homeConfigFormData.gradientFrom,
+        gradientTo: homeConfigFormData.gradientTo,
+        layout: homeConfigFormData.layout,
+        showFeatures: homeConfigFormData.showFeatures,
+        showGallery: homeConfigFormData.showGallery,
+        featuredProductIds: homeConfigFormData.featuredProductIds,
+        sectionOrder: homeConfigFormData.sectionOrder,
+        features: homeConfigFormData.features,
+        customBlocks: homePageConfig?.customBlocks || [],
+      };
+
+      if (homePageConfig) {
+        await firestoreService.updateHomePageConfig(configData);
+      } else {
+        await firestoreService.createHomePageConfig(configData as Omit<HomePageConfig, 'id' | 'created_at' | 'updated_at'>);
+      }
+      
+      setShowSuccessAnimation(true);
+      fetchHomePageConfig();
+    } catch (error: any) {
+      console.error(`保存${sectionId}配置失敗:`, error);
+      alert(error.message || '保存失敗');
+    } finally {
+      setSavingSection(null);
     }
   };
 
@@ -2384,14 +2439,6 @@ const Admin = () => {
                       key={item.id}
                       onClick={() => {
                         setActiveHomepageSection(item.id);
-                        setOpenHomepageSection(item.id);
-                        // 滾動到對應區塊
-                        setTimeout(() => {
-                          const element = document.getElementById(`section-${item.id}`);
-                          if (element) {
-                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                          }
-                        }, 100);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         activeHomepageSection === item.id
@@ -2414,15 +2461,19 @@ const Admin = () => {
             ) : (
               <form onSubmit={handleHomePageConfigSubmit} className="space-y-6">
                 {/* ========== Hero 區域設置（包含輪播） ========== */}
-                <CollapsibleSection
-                  id="section-hero"
-                  title="Hero 區域設置"
-                  description="設置首頁 Hero 區域的標題、背景圖和輪播功能"
-                  icon="🎯"
-                  isOpen={openHomepageSection === 'hero'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'hero' ? null : 'hero')}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeHomepageSection === 'hero' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🎯</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Hero 區域設置</h3>
+                          <p className="text-sm text-gray-600">設置首頁 Hero 區域的標題、背景圖和輪播功能</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">主標題 *</label>
                       <input
@@ -2515,10 +2566,10 @@ const Admin = () => {
                         placeholder="或直接輸入圖片 URL"
                       />
                     </div>
-                  </div>
+                      </div>
 
-                  {/* Hero 輪播設置 */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
+                      {/* Hero 輪播設置 */}
+                      <div className="mt-6 pt-6 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-md font-semibold">Hero 輪播功能</h4>
                       <label className="flex items-center">
@@ -2658,18 +2709,88 @@ const Admin = () => {
                       </div>
                     )}
                   </div>
-                </CollapsibleSection>
+                  
+                  {/* 保存按鈕 */}
+                  <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection('hero')}
+                      disabled={savingSection === 'hero'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'hero' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                  </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* ========== 顏色主題 ========== */}
-                <CollapsibleSection
-                  id="section-colors"
-                  title="顏色主題"
-                  description="設置網站的主色調和漸變顏色"
-                  icon="🎨"
-                  isOpen={openHomepageSection === 'colors'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'colors' ? null : 'colors')}
-                >
+                {activeHomepageSection === 'colors' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🎨</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">顏色主題</h3>
+                          <p className="text-sm text-gray-600">設置網站的主色調和漸變顏色</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
                   <div className="space-y-4">
+                    {/* 顏色使用說明 */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2">📌 顏色使用位置說明</h4>
+                      <ul className="text-xs text-blue-800 space-y-1 font-light">
+                        <li>• <strong>漸變起始色 / 漸變結束色</strong>：用於首頁 Hero 區域的按鈕背景漸變色</li>
+                        <li>• <strong>漸變起始色 / 漸變結束色</strong>：也用於 Hero 區域的漸變遮罩效果</li>
+                        <li>• <strong>主色 / 輔助色</strong>：預留用於未來擴展功能</li>
+                      </ul>
+                    </div>
+
+                    {/* 恢復預設按鈕 */}
+                    <div className="flex justify-end mb-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHomeConfigFormData({
+                            ...homeConfigFormData,
+                            primaryColor: DEFAULT_COLORS.primaryColor,
+                            secondaryColor: DEFAULT_COLORS.secondaryColor,
+                            gradientFrom: DEFAULT_COLORS.gradientFrom,
+                            gradientTo: DEFAULT_COLORS.gradientTo,
+                          });
+                          updatePreviewColors(
+                            DEFAULT_COLORS.primaryColor,
+                            DEFAULT_COLORS.secondaryColor,
+                            DEFAULT_COLORS.gradientFrom,
+                            DEFAULT_COLORS.gradientTo
+                          );
+                        }}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        一鍵恢復預設顏色
+                      </button>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">主色（按鈕顏色）</label>
@@ -2793,18 +2914,51 @@ const Admin = () => {
                       ></div>
                     </div>
                   </div>
-                </CollapsibleSection>
+                  
+                  {/* 保存按鈕 */}
+                  <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection('colors')}
+                      disabled={savingSection === 'colors'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'colors' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                  </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* ========== 布局設置 ========== */}
-                <CollapsibleSection
-                  id="section-layout"
-                  title="布局設置"
-                  description="設置首頁布局類型和顯示選項"
-                  icon="📐"
-                  isOpen={openHomepageSection === 'layout'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'layout' ? null : 'layout')}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeHomepageSection === 'layout' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">📐</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">布局設置</h3>
+                          <p className="text-sm text-gray-600">設置首頁布局類型和顯示選項</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">布局類型</label>
                       <select
@@ -2838,17 +2992,50 @@ const Admin = () => {
                       </label>
                     </div>
                   </div>
-                </CollapsibleSection>
+                  
+                  {/* 保存按鈕 */}
+                  <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection('layout')}
+                      disabled={savingSection === 'layout'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'layout' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                  </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* ========== 特色區塊管理 ========== */}
-                <CollapsibleSection
-                  id="section-features"
-                  title="特色區塊管理"
-                  description="自定義首頁特色區塊的內容、圖標和樣式"
-                  icon="⭐"
-                  isOpen={openHomepageSection === 'features'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'features' ? null : 'features')}
-                >
+                {activeHomepageSection === 'features' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">⭐</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">特色區塊管理</h3>
+                          <p className="text-sm text-gray-600">自定義首頁特色區塊的內容、圖標和樣式</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
                   <div>
                     <div className="flex justify-end mb-4">
                       <button
@@ -3112,19 +3299,52 @@ const Admin = () => {
                   </div>
                 )}
                   </div>
-                </CollapsibleSection>
+                  
+                  {/* 保存按鈕 */}
+                  <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection('features')}
+                      disabled={savingSection === 'features'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'features' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* ========== 區塊順序 ========== */}
-                <CollapsibleSection
-                  id="section-sections"
-                  title="區塊順序"
-                  description="拖拽調整首頁區塊的顯示順序"
-                  icon="📋"
-                  isOpen={openHomepageSection === 'sections'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'sections' ? null : 'sections')}
-                >
-                  <div>
-                <DndContext
+                {activeHomepageSection === 'sections' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">📋</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">區塊順序</h3>
+                          <p className="text-sm text-gray-600">拖拽調整首頁區塊的顯示順序</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
+                      <div>
+                        <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleSectionOrderDragEnd}
@@ -3162,21 +3382,54 @@ const Admin = () => {
                           </SortableItem>
                         );
                       })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                      </div>
+                      
+                      {/* 保存按鈕 */}
+                      <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection('sections')}
+                      disabled={savingSection === 'sections'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'sections' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                      </div>
                     </div>
-                  </SortableContext>
-                </DndContext>
                   </div>
-                </CollapsibleSection>
+                )}
 
                 {/* ========== 精選商品 ========== */}
-                <CollapsibleSection
-                  id="section-products"
-                  title="精選商品"
-                  description="選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序"
-                  icon="🛍️"
-                  isOpen={openHomepageSection === 'products'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'products' ? null : 'products')}
-                >
+                {activeHomepageSection === 'products' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🛍️</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">精選商品</h3>
+                          <p className="text-sm text-gray-600">選擇要在首頁展示的商品（最多 8 個），可拖拽調整順序</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
                   <div>
                 {products.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">暫無商品，請先添加商品</p>
@@ -3331,19 +3584,52 @@ const Admin = () => {
                     )}
                   </>
                 )}
+                      </div>
+                      
+                      {/* 保存按鈕 */}
+                      <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveSection('products')}
+                      disabled={savingSection === 'products'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'products' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                      </div>
+                    </div>
                   </div>
-                </CollapsibleSection>
+                )}
 
                 {/* ========== 自訂區塊管理 ========== */}
-                <CollapsibleSection
-                  id="section-custom"
-                  title="自訂區塊管理"
-                  description="新增和管理自訂首頁區塊"
-                  icon="🧩"
-                  isOpen={openHomepageSection === 'custom'}
-                  onToggle={() => setOpenHomepageSection(openHomepageSection === 'custom' ? null : 'custom')}
-                >
-                  <div>
+                {activeHomepageSection === 'custom' && (
+                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🧩</span>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">自訂區塊管理</h3>
+                          <p className="text-sm text-gray-600">新增和管理自訂首頁區塊</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="px-6 py-4">
+                      <div>
                     <div className="flex justify-end mb-4">
                   <button
                     type="button"
@@ -3775,7 +4061,36 @@ const Admin = () => {
                 </div>
               )}
                   </div>
-                </CollapsibleSection>
+                  
+                  {/* 保存按鈕 */}
+                  <div className="mt-6 pt-6 border-t border-gray-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection('custom')}
+                      disabled={savingSection === 'custom'}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                    >
+                      {savingSection === 'custom' ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          儲存此項設定
+                        </>
+                      )}
+                    </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* 提交按鈕 */}
                 <div className="flex justify-end space-x-4 mt-6">
@@ -3790,6 +4105,12 @@ const Admin = () => {
             )}
             </div>
           </div>
+
+          {/* 成功動畫 */}
+          <SuccessAnimation 
+            show={showSuccessAnimation} 
+            onComplete={() => setShowSuccessAnimation(false)} 
+          />
 
           {/* 右邊：預覽視窗 */}
           <div className="lg:col-span-1">

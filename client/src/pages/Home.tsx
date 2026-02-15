@@ -127,14 +127,8 @@ const Home = () => {
     return config?.gradientTo || '#8B5CF6';
   }, [previewColors, config?.gradientTo]);
 
-  const showFeatures = useMemo(() => config?.showFeatures !== undefined ? config.showFeatures : true, [config?.showFeatures]);
   const showGallery = useMemo(() => config?.showGallery !== undefined ? config.showGallery : true, [config?.showGallery]);
   const sectionOrder = useMemo(() => config?.sectionOrder || ['hero', 'gallery'], [config?.sectionOrder]);
-  const features = useMemo(() => config?.features || [
-    { title: '時尚精選', description: '精選最新流行女裝，涵蓋各種風格、尺碼和場合', icon: '👗', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&q=80', gradientFrom: '#EC4899', gradientTo: '#8B5CF6' },
-    { title: '便捷購物', description: '簡單易用的購物車系統，輕鬆管理您想要購買的商品', icon: '🛒', imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80', gradientFrom: '#3B82F6', gradientTo: '#06B6D4' },
-    { title: '品質保證', description: '優質面料與精緻工藝，讓您穿出自信與美麗', icon: '✨', imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', gradientFrom: '#10B981', gradientTo: '#059669' },
-  ], [config?.features]);
 
   // Hero 輪播狀態
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
