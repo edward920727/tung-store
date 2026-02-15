@@ -89,6 +89,12 @@ const Navbar = () => {
                   >
                     我的收藏
                   </Link>
+                  <Link
+                    to="/coupons"
+                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-blue-600"
+                  >
+                    優惠券
+                  </Link>
                   {(isAdmin || user.role === 'admin') && (
                     <Link
                       to="/admin"
@@ -263,6 +269,13 @@ const Navbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   我的收藏
+                </Link>
+                <Link
+                  to="/coupons"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  優惠券
                 </Link>
                 {(isAdmin || user.role === 'admin') && (
                   <Link

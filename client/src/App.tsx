@@ -16,6 +16,7 @@ const Register = lazy(() => import('./pages/Register'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Membership = lazy(() => import('./pages/Membership'));
 const Favorites = lazy(() => import('./pages/Favorites'));
+const Coupons = lazy(() => import('./pages/Coupons'));
 
 function App() {
   return (
@@ -64,6 +65,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Favorites />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/coupons"
+                element={
+                  <ProtectedRoute>
+                    <Coupons />
                   </ProtectedRoute>
                 }
               />

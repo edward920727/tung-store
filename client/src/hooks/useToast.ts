@@ -11,7 +11,8 @@ export const useToast = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Date.now().toString();
+    // 使用時間戳和隨機字符串組合確保唯一性
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setToasts((prev) => [...prev, { id, message, type }]);
     return id;
   }, []);

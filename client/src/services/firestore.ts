@@ -66,6 +66,10 @@ export interface Order {
   id: string;
   user_id: string;
   total_amount: number;
+  original_amount?: number; // 原始金額（使用優惠券前）
+  discount_amount?: number; // 折扣金額
+  coupon_code?: string; // 使用的優惠券代碼
+  coupon_id?: string; // 使用的優惠券ID
   status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
   items: OrderItem[];
   created_at: Timestamp;
@@ -94,6 +98,16 @@ export interface Coupon {
   used_count: number;
   is_active: boolean;
   created_at: Timestamp;
+}
+
+export interface UserCoupon {
+  id: string;
+  user_id: string;
+  coupon_id: string;
+  coupon?: Coupon; // 可選的優惠券詳細信息
+  claimed_at: Timestamp;
+  used: boolean;
+  used_at?: Timestamp;
 }
 
 export interface CustomBlock {
@@ -409,14 +423,39 @@ class FirestoreService {
     return { id: orderDoc.id, ...orderDoc.data() } as Order;
   }
 
-  async createOrder(userId: string, items: OrderItem[], totalAmount: number): Promise<string> {
-    const docRef = await addDoc(collection(db, 'orders'), {
+  async createOrder(
+    userId: string, 
+    items: OrderItem[], 
+    totalAmount: number,
+    options?: {
+      originalAmount?: number;
+      discountAmount?: number;
+      couponCode?: string;
+      couponId?: string;
+    }
+  ): Promise<string> {
+    const orderData: any = {
       user_id: userId,
       total_amount: totalAmount,
       status: 'pending',
       items,
       created_at: serverTimestamp(),
-    });
+    };
+
+    if (options?.originalAmount) {
+      orderData.original_amount = options.originalAmount;
+    }
+    if (options?.discountAmount) {
+      orderData.discount_amount = options.discountAmount;
+    }
+    if (options?.couponCode) {
+      orderData.coupon_code = options.couponCode;
+    }
+    if (options?.couponId) {
+      orderData.coupon_id = options.couponId;
+    }
+
+    const docRef = await addDoc(collection(db, 'orders'), orderData);
     return docRef.id;
   }
 
@@ -514,6 +553,217 @@ class FirestoreService {
 
   async deleteCoupon(couponId: string): Promise<void> {
     await deleteDoc(doc(db, 'coupons', couponId));
+  }
+
+  // ========== 用戶優惠券相關 ==========
+  async getUserCoupons(userId: string): Promise<UserCoupon[]> {
+    try {
+      // 嘗試使用索引查詢（需要創建複合索引）
+      const q = query(
+        collection(db, 'user_coupons'),
+        where('user_id', '==', userId),
+        orderBy('claimed_at', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const userCoupons = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as UserCoupon[];
+
+      // 獲取優惠券詳細信息
+      for (const userCoupon of userCoupons) {
+        const coupon = await this.getCoupon(userCoupon.coupon_id);
+        if (coupon) {
+          userCoupon.coupon = coupon;
+        }
+      }
+
+      return userCoupons;
+    } catch (error: any) {
+      // 如果索引不存在，使用備用方案：先查詢再排序
+      if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+        // 只在開發環境顯示警告
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(
+            'Firestore 索引未創建，使用備用查詢方案。',
+            '請在 Firebase Console 中創建索引以提升性能。',
+            '集合: user_coupons, 字段: user_id (Ascending), claimed_at (Descending)'
+          );
+        }
+        const q = query(
+          collection(db, 'user_coupons'),
+          where('user_id', '==', userId)
+        );
+        const querySnapshot = await getDocs(q);
+        const userCoupons = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as UserCoupon[];
+        
+        // 在客戶端按領取時間排序
+        const sortedCoupons = userCoupons.sort((a, b) => {
+          const aTime = a.claimed_at?.toMillis?.() || a.claimed_at?.seconds * 1000 || 0;
+          const bTime = b.claimed_at?.toMillis?.() || b.claimed_at?.seconds * 1000 || 0;
+          return bTime - aTime; // 降序
+        });
+
+        // 獲取優惠券詳細信息
+        for (const userCoupon of sortedCoupons) {
+          const coupon = await this.getCoupon(userCoupon.coupon_id);
+          if (coupon) {
+            userCoupon.coupon = coupon;
+          }
+        }
+
+        return sortedCoupons;
+      }
+      throw error;
+    }
+  }
+
+  async claimCoupon(userId: string, couponId: string): Promise<string> {
+    // 檢查是否已經領取過
+    const existingQ = query(
+      collection(db, 'user_coupons'),
+      where('user_id', '==', userId),
+      where('coupon_id', '==', couponId)
+    );
+    const existing = await getDocs(existingQ);
+    
+    if (!existing.empty) {
+      throw new Error('您已經領取過此優惠券');
+    }
+
+    // 檢查優惠券是否存在且有效
+    const coupon = await this.getCoupon(couponId);
+    if (!coupon) {
+      throw new Error('優惠券不存在');
+    }
+
+    if (!coupon.is_active) {
+      throw new Error('優惠券已停用');
+    }
+
+    const now = new Date();
+    const validFrom = coupon.valid_from instanceof Timestamp 
+      ? coupon.valid_from.toDate() 
+      : new Date(coupon.valid_from);
+    const validUntil = coupon.valid_until instanceof Timestamp 
+      ? coupon.valid_until.toDate() 
+      : new Date(coupon.valid_until);
+
+    if (now < validFrom || now > validUntil) {
+      throw new Error('優惠券不在有效期內');
+    }
+
+    // 檢查使用次數限制
+    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+      throw new Error('優惠券已達使用上限');
+    }
+
+    // 創建用戶優惠券記錄
+    const docRef = await addDoc(collection(db, 'user_coupons'), {
+      user_id: userId,
+      coupon_id: couponId,
+      claimed_at: serverTimestamp(),
+      used: false,
+    });
+
+    return docRef.id;
+  }
+
+  async getAvailableCoupons(): Promise<Coupon[]> {
+    const allCoupons = await this.getCoupons();
+    const now = new Date();
+    
+    return allCoupons.filter(coupon => {
+      if (!coupon.is_active) return false;
+      
+      const validFrom = coupon.valid_from instanceof Timestamp 
+        ? coupon.valid_from.toDate() 
+        : new Date(coupon.valid_from);
+      const validUntil = coupon.valid_until instanceof Timestamp 
+        ? coupon.valid_until.toDate() 
+        : new Date(coupon.valid_until);
+
+      if (now < validFrom || now > validUntil) return false;
+      
+      if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) return false;
+      
+      return true;
+    });
+  }
+
+  async validateCoupon(couponCode: string, totalAmount: number): Promise<{ valid: boolean; coupon?: Coupon; discount: number; message?: string }> {
+    const coupon = await this.getCouponByCode(couponCode);
+    
+    if (!coupon) {
+      return { valid: false, discount: 0, message: '優惠券不存在' };
+    }
+
+    if (!coupon.is_active) {
+      return { valid: false, discount: 0, message: '優惠券已停用' };
+    }
+
+    const now = new Date();
+    const validFrom = coupon.valid_from instanceof Timestamp 
+      ? coupon.valid_from.toDate() 
+      : new Date(coupon.valid_from);
+    const validUntil = coupon.valid_until instanceof Timestamp 
+      ? coupon.valid_until.toDate() 
+      : new Date(coupon.valid_until);
+
+    if (now < validFrom) {
+      return { valid: false, discount: 0, message: '優惠券尚未生效' };
+    }
+
+    if (now > validUntil) {
+      return { valid: false, discount: 0, message: '優惠券已過期' };
+    }
+
+    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
+      return { valid: false, discount: 0, message: '優惠券已達使用上限' };
+    }
+
+    if (coupon.min_purchase && totalAmount < coupon.min_purchase) {
+      return { 
+        valid: false, 
+        discount: 0, 
+        message: `訂單金額需滿 NT$${coupon.min_purchase} 才能使用此優惠券` 
+      };
+    }
+
+    // 計算折扣金額
+    let discount = 0;
+    if (coupon.discount_type === 'percentage') {
+      discount = (totalAmount * coupon.discount_value) / 100;
+      if (coupon.max_discount && discount > coupon.max_discount) {
+        discount = coupon.max_discount;
+      }
+    } else {
+      discount = coupon.discount_value;
+      if (discount > totalAmount) {
+        discount = totalAmount;
+      }
+    }
+
+    return { valid: true, coupon, discount };
+  }
+
+  async markCouponAsUsed(userCouponId: string, couponId: string): Promise<void> {
+    // 更新用戶優惠券狀態
+    await updateDoc(doc(db, 'user_coupons', userCouponId), {
+      used: true,
+      used_at: serverTimestamp(),
+    });
+
+    // 更新優惠券使用次數
+    const coupon = await this.getCoupon(couponId);
+    if (coupon) {
+      await updateDoc(doc(db, 'coupons', couponId), {
+        used_count: coupon.used_count + 1,
+      });
+    }
   }
 
   async createMembershipLevel(levelData: Omit<MembershipLevel, 'id' | 'created_at'>): Promise<string> {
