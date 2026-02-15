@@ -23,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { SortableItem } from '../components/SortableItem';
 import { CollapsibleSection } from '../components/CollapsibleSection';
 
-// 範例商品數據
+// 範例商品數據（包含懸停圖片，使用 Unsplash 無版權圖片）
 const EXAMPLE_PRODUCTS = [
   {
     name: '優雅氣質長袖連衣裙',
@@ -31,7 +31,8 @@ const EXAMPLE_PRODUCTS = [
     price: 1280,
     stock: 50,
     category: '連衣裙',
-    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80'] // 細節圖
   },
   {
     name: '簡約百搭白襯衫',
@@ -39,7 +40,8 @@ const EXAMPLE_PRODUCTS = [
     price: 680,
     stock: 80,
     category: '上衣',
-    image_url: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80'] // 背面圖
   },
   {
     name: '舒適休閒短袖T恤',
@@ -47,7 +49,8 @@ const EXAMPLE_PRODUCTS = [
     price: 380,
     stock: 100,
     category: '上衣',
-    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&q=80'] // 側面圖
   },
   {
     name: '時尚高腰闊腿褲',
@@ -55,7 +58,8 @@ const EXAMPLE_PRODUCTS = [
     price: 980,
     stock: 60,
     category: '褲裝',
-    image_url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=800&q=80'] // 細節圖
   },
   {
     name: '溫柔針織開衫外套',
@@ -63,7 +67,8 @@ const EXAMPLE_PRODUCTS = [
     price: 890,
     stock: 45,
     category: '外套',
-    image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80'] // 背面圖
   },
   {
     name: 'A字半身裙',
@@ -71,7 +76,8 @@ const EXAMPLE_PRODUCTS = [
     price: 750,
     stock: 70,
     category: '裙裝',
-    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80'] // 細節圖
   },
   {
     name: '修身彈力牛仔褲',
@@ -79,7 +85,8 @@ const EXAMPLE_PRODUCTS = [
     price: 880,
     stock: 90,
     category: '褲裝',
-    image_url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=800&q=80'] // 側面圖
   },
   {
     name: '經典風衣外套',
@@ -87,7 +94,8 @@ const EXAMPLE_PRODUCTS = [
     price: 1580,
     stock: 35,
     category: '外套',
-    image_url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&q=80'] // 背面圖
   },
   {
     name: '優雅無袖連衣裙',
@@ -95,7 +103,8 @@ const EXAMPLE_PRODUCTS = [
     price: 980,
     stock: 55,
     category: '連衣裙',
-    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=800&q=80'] // 細節圖
   },
   {
     name: '時尚條紋T恤',
@@ -103,7 +112,8 @@ const EXAMPLE_PRODUCTS = [
     price: 420,
     stock: 85,
     category: '上衣',
-    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80'
+    image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80',
+    image_urls: ['https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&q=80'] // 側面圖
   }
 ];
 
@@ -191,7 +201,9 @@ const Admin = () => {
     price: '',
     stock: '',
     image_url: '',
+    image_urls: [] as string[], // 懸停圖片列表
     external_image_url: '', // 外部圖片 URL 輸入框
+    external_hover_image_url: '', // 外部懸停圖片 URL 輸入框
     category: ''
   });
   const [uploadingExternalImage, setUploadingExternalImage] = useState(false);
@@ -633,11 +645,102 @@ const Admin = () => {
     }
   };
 
-  const handleImageCrop = (croppedImageUrl: string) => {
-    setProductFormData({ ...productFormData, image_url: croppedImageUrl });
+  // 將 base64 圖片上傳到 Firebase Storage
+  const uploadBase64Image = async (base64String: string, type: 'main' | 'hover'): Promise<string> => {
+    if (!firebaseUser) {
+      throw new Error('請先登入管理員帳號');
+    }
+
+    try {
+      // 將 base64 字符串轉換為 Blob
+      const base64Data = base64String.split(',')[1] || base64String;
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      
+      // 將 Blob 轉換為 File
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(7);
+      const fileName = `${timestamp}_${randomStr}.jpg`;
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
+      
+      // 生成路徑
+      const path = `products/${type === 'main' ? 'main' : 'hover'}/${fileName}`;
+      
+      // 上傳到 Firebase Storage
+      const url = await uploadImage(file, path);
+      return url;
+    } catch (error: any) {
+      console.error('上傳 base64 圖片失敗:', error);
+      throw new Error('上傳圖片失敗: ' + (error.message || '未知錯誤'));
+    }
   };
 
-  // 處理外部圖片 URL 上傳
+  const handleImageCrop = async (croppedImageUrl: string) => {
+    // 如果是 base64 字符串（以 data: 開頭），需要上傳到 Storage
+    if (croppedImageUrl.startsWith('data:')) {
+      try {
+        setLoading(true);
+        console.log('開始上傳主圖...');
+        const uploadedUrl = await uploadBase64Image(croppedImageUrl, 'main');
+        console.log('主圖上傳成功，URL:', uploadedUrl);
+        setProductFormData({ ...productFormData, image_url: uploadedUrl });
+        // 不顯示 alert，避免打斷用戶操作
+        // 使用 console.log 和視覺反饋（預覽圖片會自動顯示）
+      } catch (error: any) {
+        console.error('上傳圖片失敗:', error);
+        alert('上傳圖片失敗: ' + (error.message || '未知錯誤') + '\n\n請檢查：\n1. 是否已登入管理員帳號\n2. Firebase Storage 配置是否正確\n3. 網絡連接是否正常');
+        // 即使上傳失敗，也保存 base64 作為臨時預覽（但會提示用戶）
+        setProductFormData({ ...productFormData, image_url: croppedImageUrl });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // 如果已經是 URL，直接使用
+      console.log('使用現有 URL:', croppedImageUrl);
+      setProductFormData({ ...productFormData, image_url: croppedImageUrl });
+    }
+  };
+
+  const handleHoverImageCrop = async (croppedImageUrl: string) => {
+    // 如果是 base64 字符串（以 data: 開頭），需要上傳到 Storage
+    if (croppedImageUrl.startsWith('data:')) {
+      try {
+        setLoading(true);
+        console.log('開始上傳懸停圖...');
+        const uploadedUrl = await uploadBase64Image(croppedImageUrl, 'hover');
+        console.log('懸停圖上傳成功，URL:', uploadedUrl);
+        setProductFormData({ 
+          ...productFormData, 
+          image_urls: [...productFormData.image_urls, uploadedUrl] 
+        });
+        // 不顯示 alert，避免打斷用戶操作
+      } catch (error: any) {
+        console.error('上傳懸停圖片失敗:', error);
+        alert('上傳懸停圖片失敗: ' + (error.message || '未知錯誤') + '\n\n請檢查：\n1. 是否已登入管理員帳號\n2. Firebase Storage 配置是否正確\n3. 網絡連接是否正常');
+        // 即使上傳失敗，也保存 base64 作為臨時預覽（但會提示用戶）
+        setProductFormData({ 
+          ...productFormData, 
+          image_urls: [...productFormData.image_urls, croppedImageUrl] 
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // 如果已經是 URL，直接使用
+      console.log('使用現有懸停圖 URL:', croppedImageUrl);
+      setProductFormData({ 
+        ...productFormData, 
+        image_urls: [...productFormData.image_urls, croppedImageUrl] 
+      });
+    }
+  };
+
+  // 處理外部圖片 URL 上傳（主圖）
   const handleExternalImageUpload = async () => {
     if (!productFormData.external_image_url.trim()) {
       alert('請輸入外部圖片 URL');
@@ -666,30 +769,132 @@ const Admin = () => {
     }
   };
 
+  // 處理外部懸停圖片 URL 上傳
+  const handleExternalHoverImageUpload = async () => {
+    if (!productFormData.external_hover_image_url.trim()) {
+      alert('請輸入外部圖片 URL');
+      return;
+    }
+
+    if (!firebaseUser) {
+      alert('請先登入管理員帳號');
+      return;
+    }
+
+    setUploadingExternalImage(true);
+    try {
+      const uploadedUrl = await downloadAndUploadImage(productFormData.external_hover_image_url);
+      setProductFormData({
+        ...productFormData,
+        image_urls: [...productFormData.image_urls, uploadedUrl],
+        external_hover_image_url: '', // 清空外部 URL 輸入框
+      });
+      alert('外部懸停圖片已成功下載並上傳到 Firebase Storage！');
+    } catch (error: any) {
+      console.error('上傳外部圖片失敗:', error);
+      alert('上傳失敗: ' + (error.message || '未知錯誤'));
+    } finally {
+      setUploadingExternalImage(false);
+    }
+  };
+
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 驗證必填字段
+    if (!productFormData.name.trim()) {
+      alert('請填寫商品名稱');
+      return;
+    }
+    if (!productFormData.price || parseFloat(productFormData.price) <= 0) {
+      alert('請填寫有效的價格（必須大於 0）');
+      return;
+    }
+    if (productFormData.stock === '' || parseInt(productFormData.stock) < 0) {
+      alert('請填寫有效的庫存數量（必須大於等於 0）');
+      return;
+    }
+    if (!productFormData.image_url) {
+      alert('請上傳商品主圖');
+      return;
+    }
+
+    // 檢查圖片是否還是 base64（未上傳成功）
+    if (productFormData.image_url.startsWith('data:')) {
+      const shouldContinue = window.confirm(
+        '⚠️ 警告：主圖尚未上傳到 Firebase Storage（仍為 base64 格式）。\n\n' +
+        '這可能導致保存失敗（Firestore 字段大小限制約 1MB）。\n\n' +
+        '是否要繼續保存？建議先重新上傳圖片。'
+      );
+      if (!shouldContinue) {
+        return;
+      }
+    }
+
+    // 檢查懸停圖片是否還有 base64
+    const hasBase64HoverImages = productFormData.image_urls.some(url => url.startsWith('data:'));
+    if (hasBase64HoverImages) {
+      const shouldContinue = window.confirm(
+        '⚠️ 警告：部分懸停圖片尚未上傳到 Firebase Storage（仍為 base64 格式）。\n\n' +
+        '這可能導致保存失敗。\n\n' +
+        '是否要繼續保存？建議先重新上傳圖片。'
+      );
+      if (!shouldContinue) {
+        return;
+      }
+    }
+
     try {
+      setLoading(true);
       const productData = {
-        name: productFormData.name,
-        description: productFormData.description,
+        name: productFormData.name.trim(),
+        description: productFormData.description.trim(),
         price: parseFloat(productFormData.price),
         stock: parseInt(productFormData.stock),
         image_url: productFormData.image_url,
-        category: productFormData.category,
+        image_urls: productFormData.image_urls, // 懸停圖片列表
+        category: productFormData.category.trim(),
       };
 
       if (editingProduct) {
         await firestoreService.updateProduct(editingProduct.id, productData);
+        alert('✅ 商品已更新！');
       } else {
         await firestoreService.createProduct(productData);
+        alert('✅ 商品已添加！');
       }
+      
       setShowProductForm(false);
       setEditingProduct(null);
-      setProductFormData({ name: '', description: '', price: '', stock: '', image_url: '', external_image_url: '', category: '' });
+      setProductFormData({ 
+        name: '', 
+        description: '', 
+        price: '', 
+        stock: '', 
+        image_url: '', 
+        image_urls: [],
+        external_image_url: '', 
+        external_hover_image_url: '',
+        category: '' 
+      });
       fetchProducts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('保存商品失敗:', error);
-      alert('保存失敗，請檢查輸入');
+      let errorMessage = '保存失敗，請檢查輸入';
+      
+      if (error.message?.includes('longer than') || error.message?.includes('1048487')) {
+        errorMessage = '❌ 保存失敗：圖片文件過大。\n\n' +
+          '請確保圖片已上傳到 Firebase Storage（不是 base64 格式）。\n\n' +
+          '解決方法：\n' +
+          '1. 重新裁切並上傳圖片\n' +
+          '2. 或使用外部圖片 URL 功能上傳';
+      } else if (error.message) {
+        errorMessage = '保存失敗：' + error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -789,7 +994,9 @@ const Admin = () => {
       price: product.price.toString(),
       stock: product.stock.toString(),
       image_url: product.image_url,
+      image_urls: product.image_urls || [],
       external_image_url: '',
+      external_hover_image_url: '',
       category: product.category
     });
     setShowProductForm(true);
@@ -1098,7 +1305,17 @@ const Admin = () => {
             <button
               onClick={() => {
                 setEditingProduct(null);
-                setProductFormData({ name: '', description: '', price: '', stock: '', image_url: '', external_image_url: '', category: '' });
+                setProductFormData({ 
+                  name: '', 
+                  description: '', 
+                  price: '', 
+                  stock: '', 
+                  image_url: '', 
+                  image_urls: [],
+                  external_image_url: '', 
+                  external_hover_image_url: '',
+                  category: '' 
+                });
                 setShowProductForm(true);
               }}
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-4 py-2 rounded-md shadow-lg"
@@ -1163,86 +1380,241 @@ const Admin = () => {
                       rows={3}
                     />
                   </div>
+                  {/* 主圖（展示圖片） */}
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">商品圖片</label>
-                    <ImageCropper onCropComplete={handleImageCrop} aspect={1} />
-                    {productFormData.image_url && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-600 mb-2">預覽：</p>
-                        <img
-                          src={productFormData.image_url}
-                          alt="預覽"
-                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setProductFormData({ ...productFormData, image_url: '' })}
-                          className="mt-2 text-sm text-red-600 hover:text-red-700"
-                        >
-                          清除圖片
-                        </button>
-                      </div>
-                    )}
-                    <div className="mt-4 space-y-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <span className="text-pink-600">★</span> 展示圖片（主圖）
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          外部圖片 URL（自動下載並上傳到 Firebase Storage）
-                        </label>
-                        <div className="flex gap-2">
+                        <ImageCropper onCropComplete={handleImageCrop} aspect={1} id="main-image-cropper" />
+                        {loading && (
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-sm text-yellow-800">⏳ 正在上傳圖片到 Firebase Storage...</p>
+                          </div>
+                        )}
+                        {productFormData.image_url && !loading && (
+                          <div className="mt-4 p-4 bg-pink-50 border-2 border-pink-300 rounded-lg">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-pink-600 font-bold text-lg">📷</span>
+                              <p className="text-sm font-semibold text-pink-800">
+                                展示圖片預覽（主圖）
+                              </p>
+                              {productFormData.image_url.startsWith('data:') ? (
+                                <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">Base64</span>
+                              ) : (
+                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">已上傳</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-pink-600 mb-3">此圖片將作為商品的主要展示圖片</p>
+                            <div className="flex items-start gap-3">
+                              <img
+                                src={productFormData.image_url}
+                                alt="展示圖片預覽"
+                                className="w-32 h-32 object-cover rounded-lg border-2 border-pink-400 shadow-sm"
+                                onError={(e) => {
+                                  console.error('展示圖片加載失敗:', productFormData.image_url);
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  const parent = (e.target as HTMLImageElement).parentElement;
+                                  if (parent) {
+                                    const errorMsg = document.createElement('p');
+                                    errorMsg.className = 'text-xs text-red-600 mt-2';
+                                    errorMsg.textContent = '❌ 圖片無法顯示，請重新上傳';
+                                    parent.appendChild(errorMsg);
+                                  }
+                                }}
+                              />
+                              <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-2">僅為預覽，需點擊「確認保存」才會保存</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setProductFormData({ ...productFormData, image_url: '' })}
+                                  className="text-xs px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded transition-colors"
+                                >
+                                  清除展示圖片
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            外部圖片 URL（自動下載並上傳）
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="url"
+                              value={productFormData.external_image_url}
+                              onChange={(e) => setProductFormData({ ...productFormData, external_image_url: e.target.value })}
+                              placeholder="https://example.com/image.jpg"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm"
+                              disabled={uploadingExternalImage}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleExternalImageUpload();
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleExternalImageUpload}
+                              disabled={uploadingExternalImage || !productFormData.external_image_url.trim()}
+                              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors whitespace-nowrap text-sm"
+                            >
+                              {uploadingExternalImage ? '上傳中...' : '上傳'}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            或直接輸入圖片 URL
+                          </label>
                           <input
                             type="url"
-                            value={productFormData.external_image_url}
-                            onChange={(e) => setProductFormData({ ...productFormData, external_image_url: e.target.value })}
+                            value={productFormData.image_url}
+                            onChange={(e) => setProductFormData({ ...productFormData, image_url: e.target.value })}
                             placeholder="https://example.com/image.jpg"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                            disabled={uploadingExternalImage}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleExternalImageUpload();
-                              }
-                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm"
                           />
-                          <button
-                            type="button"
-                            onClick={handleExternalImageUpload}
-                            disabled={uploadingExternalImage || !productFormData.external_image_url.trim()}
-                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors whitespace-nowrap"
-                          >
-                            {uploadingExternalImage ? '上傳中...' : '下載並上傳'}
-                          </button>
                         </div>
-                        <p className="mt-1 text-xs text-gray-500">
-                          輸入外部圖片 URL，系統會自動下載並上傳到 Firebase Storage，確保圖片永久有效
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          或直接輸入圖片 URL（不推薦，可能失效）
-                        </label>
-                        <input
-                          type="url"
-                          value={productFormData.image_url}
-                          onChange={(e) => setProductFormData({ ...productFormData, image_url: e.target.value })}
-                          placeholder="https://example.com/image.jpg 或 Firebase Storage URL"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
-                        />
                       </div>
                     </div>
                   </div>
+
+                  {/* 懸停圖片（滑鼠滑過去展示的圖片） */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <span className="text-purple-600">★</span> 懸停圖片（滑鼠滑過去時顯示，可選）
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <ImageCropper onCropComplete={handleHoverImageCrop} aspect={1} id="hover-image-cropper" />
+                        <p className="text-xs text-gray-500 mt-2">上傳的圖片將添加到懸停圖片列表</p>
+                        {loading && (
+                          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-xs text-yellow-800">⏳ 正在上傳懸停圖片...</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            外部圖片 URL（自動下載並上傳）
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="url"
+                              value={productFormData.external_hover_image_url}
+                              onChange={(e) => setProductFormData({ ...productFormData, external_hover_image_url: e.target.value })}
+                              placeholder="https://example.com/hover-image.jpg"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
+                              disabled={uploadingExternalImage}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleExternalHoverImageUpload();
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleExternalHoverImageUpload}
+                              disabled={uploadingExternalImage || !productFormData.external_hover_image_url.trim()}
+                              className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors whitespace-nowrap text-sm"
+                            >
+                              {uploadingExternalImage ? '上傳中...' : '上傳'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 懸停圖片預覽（統一顯示） */}
+                    {productFormData.image_urls.length > 0 && !loading && (
+                      <div className="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-purple-600 font-bold text-lg">🖼️</span>
+                          <p className="text-sm font-semibold text-purple-800">
+                            懸停圖片預覽（共 {productFormData.image_urls.length} 張）
+                          </p>
+                        </div>
+                        <p className="text-xs text-purple-600 mb-3">
+                          第一張將在滑鼠滑過商品時顯示，僅為預覽，需點擊「確認保存」才會保存
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          {productFormData.image_urls.map((url, index) => (
+                            <div key={index} className="relative group">
+                              <div className="relative">
+                                <img
+                                  src={url}
+                                  alt={`懸停圖 ${index + 1}`}
+                                  className="w-24 h-24 object-cover rounded-lg border-2 border-purple-400 shadow-sm"
+                                  onError={(e) => {
+                                    console.error(`懸停圖片 ${index + 1} 加載失敗`);
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newUrls = productFormData.image_urls.filter((_, i) => i !== index);
+                                    setProductFormData({ ...productFormData, image_urls: newUrls });
+                                  }}
+                                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                                  title="刪除此懸停圖片"
+                                >
+                                  ×
+                                </button>
+                                {index === 0 && (
+                                  <span className="absolute bottom-0 left-0 right-0 bg-purple-600 text-white text-xs text-center py-0.5 rounded-b-lg font-medium">
+                                    主要懸停圖
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-center text-gray-500 mt-1">第 {index + 1} 張</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 mb-2">
+                    <strong>⚠️ 重要提示：</strong>所有信息（包括圖片）都只是預覽，只有點擊下方的「確認保存」按鈕才會真正保存到數據庫。
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    請確認所有信息填寫完整後再點擊保存按鈕。
+                  </p>
                 </div>
                 <div className="mt-4 flex space-x-4">
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
+                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg font-medium"
                   >
-                    保存
+                    ✓ 確認保存
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setShowProductForm(false);
-                      setEditingProduct(null);
+                      if (window.confirm('確定要取消嗎？未保存的更改將丟失。')) {
+                        setShowProductForm(false);
+                        setEditingProduct(null);
+                        setProductFormData({ 
+                          name: '', 
+                          description: '', 
+                          price: '', 
+                          stock: '', 
+                          image_url: '', 
+                          image_urls: [],
+                          external_image_url: '', 
+                          external_hover_image_url: '',
+                          category: '' 
+                        });
+                      }
                     }}
                     className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md"
                   >

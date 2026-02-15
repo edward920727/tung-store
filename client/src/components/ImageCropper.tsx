@@ -5,14 +5,17 @@ import 'react-image-crop/dist/ReactCrop.css';
 interface ImageCropperProps {
   onCropComplete: (croppedImageUrl: string) => void;
   aspect?: number;
+  id?: string; // 添加唯一 ID 支持
 }
 
-const ImageCropper: React.FC<ImageCropperProps> = ({ onCropComplete, aspect = 1 }) => {
+const ImageCropper: React.FC<ImageCropperProps> = ({ onCropComplete, aspect = 1, id }) => {
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // 生成唯一的 ID
+  const inputId = id || `image-upload-${Math.random().toString(36).substring(7)}`;
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -113,11 +116,11 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ onCropComplete, aspect = 1 
           accept="image/*"
           onChange={onSelectFile}
           className="hidden"
-          id="image-upload"
+          id={inputId}
         />
         <label
-          htmlFor="image-upload"
-          className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md cursor-pointer"
+          htmlFor={inputId}
+          className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md cursor-pointer transition-colors"
         >
           選擇圖片
         </label>
@@ -144,13 +147,21 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ onCropComplete, aspect = 1 
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleCrop}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCrop();
+              }}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
             >
               確認裁切
             </button>
             <button
-              onClick={() => {
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setImgSrc('');
                 setCrop(undefined);
                 setCompletedCrop(undefined);

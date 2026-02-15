@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { firestoreService, HomePageConfig, Product, CustomBlock } from '../services/firestore';
 import { SEO } from '../components/SEO';
+import { ProductCard } from '../components/ProductCard';
 
 const Home = () => {
   const [config, setConfig] = useState<HomePageConfig | null>(null);
@@ -335,33 +336,18 @@ const Home = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <h2 
-          className="text-4xl font-bold text-center mb-12"
-          style={{ color: primaryColor }}
+          className="text-4xl font-light text-center mb-12 text-gray-700"
         >
           精選商品展示
         </h2>
         {featuredProducts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {featuredProducts.map((product) => (
-              <Link
-                key={product.id}
-                to={`/products/${product.id}`}
-                className="relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 aspect-square group"
-              >
-                <img 
-                  src={product.image_url || 'https://via.placeholder.com/600x600'} 
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                  <h3 className="text-white font-bold text-lg mb-1">{product.name}</h3>
-                  <p className="text-white/90 text-sm">NT${product.price}</p>
-                </div>
-              </Link>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 font-light">
             <p>暫無精選商品，請在後台設置</p>
           </div>
         )}
@@ -445,34 +431,18 @@ const Home = () => {
         return (
           <div key={block.id} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={style}>
             {block.title && (
-              <h2 className="text-3xl font-bold mb-8 text-center" style={{ color: block.textColor || '#000000' }}>
+              <h2 className="text-3xl font-light mb-8 text-center" style={{ color: block.textColor || '#000000' }}>
                 {block.title}
               </h2>
             )}
             {products.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {products.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/products/${product.id}`}
-                    className="group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                  >
-                    <div className="aspect-square overflow-hidden">
-                      <img
-                        src={product.image_url || 'https://via.placeholder.com/600x600'}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-4 bg-white">
-                      <h3 className="font-bold text-lg mb-2 text-gray-900 truncate">{product.name}</h3>
-                      <p className="text-pink-600 font-semibold">NT${product.price}</p>
-                    </div>
-                  </Link>
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-gray-500">
+              <div className="text-center py-12 text-gray-500 font-light">
                 <p>暫無商品</p>
               </div>
             )}

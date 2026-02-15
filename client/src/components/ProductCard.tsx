@@ -10,12 +10,11 @@ interface ProductCardProps {
 export const ProductCard = memo<ProductCardProps>(({ product }) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // 獲取圖片：如果有 image_urls 且有多張圖片，懸停時顯示第二張
+  // 獲取圖片：如果有 image_urls，懸停時顯示第一張懸停圖
   const primaryImage = product.image_url || 'https://images.unsplash.com/photo-1503919005314-30d9339471c3?w=400&q=80';
-  const hoverImage = product.image_urls && product.image_urls.length > 1 
-    ? product.image_urls[1] 
+  const hoverImage = product.image_urls && product.image_urls.length > 0 
+    ? product.image_urls[0]  // 第一張懸停圖
     : null;
-  const currentImage = isHovered && hoverImage ? hoverImage : primaryImage;
 
   return (
     <Link
