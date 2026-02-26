@@ -29,10 +29,10 @@ const Admin = () => {
   
   // 根據路由確定當前活動的標籤
   const getActiveTabFromRoute = (): 'coupons' | 'membership' | 'users' | 'homepage' => {
-    if (location.pathname === '/admin/coupons') return 'coupons';
-    if (location.pathname === '/admin/membership') return 'membership';
-    if (location.pathname === '/admin/users') return 'users';
-    if (location.pathname === '/admin/homepage') return 'homepage';
+    if (location.pathname === '/coupons') return 'coupons';
+    if (location.pathname === '/membership') return 'membership';
+    if (location.pathname === '/users') return 'users';
+    if (location.pathname === '/homepage') return 'homepage';
     return 'coupons'; // 默認
   };
   

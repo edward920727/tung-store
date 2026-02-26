@@ -6,7 +6,6 @@ import { firestoreService, CartItem } from '../services/firestore';
 const Navbar = () => {
   const { user, logout, firebaseUser } = useAuth();
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -17,15 +16,6 @@ const Navbar = () => {
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const cartDropdownRef = useRef<HTMLDivElement>(null);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
-
-  // 監聽用戶狀態變化
-  useEffect(() => {
-    if (user) {
-      setIsAdmin(user.role === 'admin');
-    } else {
-      setIsAdmin(false);
-    }
-  }, [user]);
 
   // 獲取分類
   useEffect(() => {
@@ -337,14 +327,6 @@ const Navbar = () => {
                   >
                     我的訂單
                   </Link>
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="text-sm font-medium text-pink-600 hover:text-pink-700 transition-colors"
-                    >
-                      管理後台
-                    </Link>
-                  )}
                 </>
               )}
             </div>
@@ -459,15 +441,6 @@ const Navbar = () => {
                     >
                       我的會員
                     </Link>
-                    {isAdmin && (
-                      <Link
-                        to="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block px-4 py-3 text-base font-medium text-pink-600 hover:bg-pink-50 rounded-md"
-                      >
-                        管理後台
-                      </Link>
-                    )}
                   </>
                 )}
               </div>
