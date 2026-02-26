@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { firestoreService, Product, Order, Coupon, User, MembershipLevel } from '../services/firestore';
+import { firestoreService, Order } from '../services/firestore';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -275,7 +275,7 @@ const AdminDashboard = () => {
                       {order.created_at &&
                         (order.created_at instanceof Date
                           ? order.created_at.toLocaleString('zh-TW')
-                          : new Date(order.created_at).toLocaleString('zh-TW'))}
+                          : order.created_at.toDate().toLocaleString('zh-TW'))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
