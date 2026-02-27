@@ -808,25 +808,31 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
-        {/* 頁面標題區：高級感、留白與字體節奏 */}
-        <header className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Dashboard</p>
-            <h1 className="mt-3 text-2xl font-light tracking-wide text-zinc-50">
-              商城後台管理
-            </h1>
-          </div>
-        </header>
-
-        {/* 內容區塊外框：黑白灰卡片感 */}
-        <div className="rounded-2xl border border-zinc-900 bg-zinc-900/60 shadow-sm backdrop-blur-sm p-6 space-y-10">
+    <div className="space-y-6">
+      {/* 頁面標題：依當前分頁顯示簡潔標題 */}
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+            {activeTab === 'coupons' && '促銷與優惠'}
+            {activeTab === 'membership' && '會員層級'}
+            {activeTab === 'users' && '會員管理'}
+            {activeTab === 'homepage' && '首頁體驗設計'}
+          </p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">
+            {activeTab === 'coupons' && '優惠券管理'}
+            {activeTab === 'membership' && '會員等級設定'}
+            {activeTab === 'users' && '會員帳號與權限'}
+            {activeTab === 'homepage' && '首頁設計與佈局'}
+          </h1>
+        </div>
+      </header>
 
       {activeTab === 'coupons' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium tracking-wide text-zinc-100">優惠券列表</h2>
+            <h2 className="text-sm font-semibold tracking-wide text-slate-900">
+              優惠券列表
+            </h2>
             <button
               onClick={() => {
                 setEditingCoupon(null);
@@ -844,44 +850,44 @@ const Admin = () => {
                 });
                 setShowCouponForm(true);
               }}
-              className="px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-800 transition-colors"
+              className="px-4 py-2 rounded-xl border border-slate-200/70 bg-white text-xs font-medium tracking-wide text-slate-800 shadow-[0_8px_30px_rgba(15,23,42,0.04)] hover:bg-slate-50"
             >
               添加優惠券
             </button>
           </div>
 
           {showCouponForm && (
-            <div className="bg-white/95 shadow-sm rounded-2xl p-6 border border-zinc-100">
-              <h3 className="text-base font-medium tracking-wide mb-4 text-zinc-900">
+            <div className="rounded-xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-6">
+              <h3 className="text-sm font-semibold tracking-wide text-slate-900">
                 {editingCoupon ? '編輯優惠券' : '添加優惠券'}
               </h3>
               <form onSubmit={handleCouponSubmit}>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">優惠券代碼 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">優惠券代碼 *</label>
                     <input
                       type="text"
                       value={couponFormData.code}
                       onChange={(e) => setCouponFormData({ ...couponFormData, code: e.target.value.toUpperCase() })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       placeholder="例如: SUMMER2024"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">折扣類型 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">折扣類型 *</label>
                     <select
                       value={couponFormData.discount_type}
                       onChange={(e) => setCouponFormData({ ...couponFormData, discount_type: e.target.value as 'percentage' | 'fixed' })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     >
                       <option value="percentage">百分比折扣</option>
                       <option value="fixed">固定金額</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
                       折扣值 * {couponFormData.discount_type === 'percentage' ? '(%)' : '(NT$)'}
                     </label>
                     <input
@@ -890,66 +896,66 @@ const Admin = () => {
                       value={couponFormData.discount_value}
                       onChange={(e) => setCouponFormData({ ...couponFormData, discount_value: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     />
                   </div>
                   {couponFormData.discount_type === 'percentage' && (
                   <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">最高折扣金額 (NT$)</label>
+                      <label className="block text-xs font-medium text-slate-600 mb-1">最高折扣金額 (NT$)</label>
                     <input
                       type="number"
                         step="0.01"
                         value={couponFormData.max_discount}
                         onChange={(e) => setCouponFormData({ ...couponFormData, max_discount: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     />
                   </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">最低消費金額 (NT$)</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">最低消費金額 (NT$)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={couponFormData.min_purchase}
                       onChange={(e) => setCouponFormData({ ...couponFormData, min_purchase: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">使用次數限制</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">使用次數限制</label>
                     <input
                       type="number"
                       value={couponFormData.usage_limit}
                       onChange={(e) => setCouponFormData({ ...couponFormData, usage_limit: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     />
                   </div>
                       <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">有效開始時間 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">有效開始時間 *</label>
                             <input
                       type="datetime-local"
                       value={couponFormData.valid_from}
                       onChange={(e) => setCouponFormData({ ...couponFormData, valid_from: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     />
                         </div>
                         <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">有效結束時間 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">有效結束時間 *</label>
                           <input
                       type="datetime-local"
                       value={couponFormData.valid_until}
                       onChange={(e) => setCouponFormData({ ...couponFormData, valid_until: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                           />
                         </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">描述</label>
                     <textarea
                       value={couponFormData.description}
                       onChange={(e) => setCouponFormData({ ...couponFormData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       rows={2}
                     />
                           </div>
@@ -961,14 +967,14 @@ const Admin = () => {
                         onChange={(e) => setCouponFormData({ ...couponFormData, is_active: e.target.checked ? 1 : 0 })}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">啟用優惠券</span>
+                      <span className="text-xs text-slate-600">啟用優惠券</span>
                     </label>
                           </div>
                 </div>
                 <div className="mt-6 flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 rounded-xl border border-zinc-900 bg-zinc-950 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-900 transition-colors"
+                    className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm hover:bg-slate-800"
                   >
                     保存
                   </button>
@@ -978,7 +984,7 @@ const Admin = () => {
                       setShowCouponForm(false);
                       setEditingCoupon(null);
                     }}
-                    className="px-6 py-2 rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 text-sm hover:bg-zinc-200 transition-colors"
+                    className="px-6 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 hover:bg-slate-100"
                   >
                     取消
                   </button>
@@ -988,22 +994,36 @@ const Admin = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-12 text-zinc-400 text-sm tracking-wide">加載中...</div>
+            <div className="text-center py-12 text-sm tracking-wide text-slate-400">加載中...</div>
           ) : (
-            <div className="bg-white/95 shadow-sm rounded-2xl overflow-hidden border border-zinc-100">
-              <table className="min-w-full divide-y divide-zinc-100">
-                <thead className="bg-zinc-50/80">
+            <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+              <table className="min-w-full divide-y divide-slate-200/60">
+                <thead className="bg-slate-50/80">
                   <tr>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">代碼</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">描述</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">折扣</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">有效期</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">使用情況</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">狀態</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">操作</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      代碼
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      描述
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      折扣
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      有效期
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      使用情況
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      狀態
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                      操作
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white/95 divide-y divide-zinc-100">
+                <tbody className="divide-y divide-slate-200/60 bg-white">
                   {coupons.map((coupon) => {
                     const validUntil = coupon.valid_until instanceof Timestamp 
                       ? coupon.valid_until.toDate() 
@@ -1011,31 +1031,38 @@ const Admin = () => {
                     const isExpired = validUntil < new Date();
                     const isActive = coupon.is_active && !isExpired;
                     return (
-                      <tr key={coupon.id} className="hover:bg-zinc-50/60 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-zinc-900 tracking-wide">{coupon.code}</td>
-                        <td className="px-6 py-4 text-sm text-zinc-700">{coupon.description || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
+                      <tr key={coupon.id} className="transition-colors hover:bg-slate-50/80">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold tracking-wide text-slate-900">
+                          {coupon.code}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {coupon.description || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                           {coupon.discount_type === 'percentage' 
                             ? `${coupon.discount_value}%` 
                             : `NT$${coupon.discount_value}`}
                           {coupon.max_discount && coupon.discount_type === 'percentage' && (
-                            <span className="text-xs text-zinc-500"> (最高NT${coupon.max_discount})</span>
+                            <span className="text-xs text-slate-500"> (最高NT${coupon.max_discount})</span>
                           )}
                       </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                           <div>{coupon.valid_from instanceof Timestamp 
                             ? coupon.valid_from.toDate().toLocaleDateString('zh-CN')
                             : new Date(coupon.valid_from).toLocaleDateString('zh-CN')}</div>
-                          <div className="text-xs text-zinc-500">至 {coupon.valid_until instanceof Timestamp
+                          <div className="text-xs text-slate-500">至 {coupon.valid_until instanceof Timestamp
                             ? coupon.valid_until.toDate().toLocaleDateString('zh-CN')
                             : new Date(coupon.valid_until).toLocaleDateString('zh-CN')}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                           {coupon.used_count} / {coupon.usage_limit || '∞'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-200 text-zinc-700'
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              isActive
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-slate-200 text-slate-700'
                           }`}>
                             {isActive ? '有效' : '無效'}
                           </span>
@@ -3103,83 +3130,92 @@ const Admin = () => {
             onComplete={() => setShowSuccessAnimation(false)} 
           />
 
-          {/* 右邊：預覽視窗 */}
+          {/* 右邊：預覽視窗（裝置模型） */}
           <div className="lg:col-span-1">
-            <div className="bg-white shadow-lg rounded-lg p-4 sticky top-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">即時預覽</h3>
-                <div className="flex items-center gap-2">
-                  {/* 預覽模式切換 */}
-                  <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <div className="sticky top-4">
+              <div className="rounded-xl border border-slate-200/60 bg-white/95 p-6 shadow-[0_8px_30px_rgba(15,23,42,0.06)] space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold tracking-wide text-slate-900">即時預覽</h3>
+                    <p className="text-xs text-slate-500">
+                      模擬不同裝置上的首頁體驗。
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* 預覽模式切換 */}
+                    <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMode('mobile')}
+                        className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-all ${
+                          previewMode === 'mobile'
+                            ? 'bg-slate-900 text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        📱 手機
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMode('desktop')}
+                        className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-all ${
+                          previewMode === 'desktop'
+                            ? 'bg-slate-900 text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        💻 電腦
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setPreviewMode('mobile')}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        previewMode === 'mobile'
-                          ? 'bg-pink-500 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      onClick={() => {
+                        const iframe = document.getElementById('homepage-preview') as HTMLIFrameElement;
+                        if (iframe) {
+                          iframe.src = iframe.src; // 重新載入預覽
+                        }
+                      }}
+                      className="text-xs font-medium text-slate-600 hover:text-slate-900"
                     >
-                      📱 手機
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewMode('desktop')}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                        previewMode === 'desktop'
-                          ? 'bg-pink-500 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      💻 電腦
+                      刷新
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const iframe = document.getElementById('homepage-preview') as HTMLIFrameElement;
-                      if (iframe) {
-                        iframe.src = iframe.src; // 重新載入預覽
-                      }
-                    }}
-                    className="text-sm text-pink-600 hover:text-pink-700 font-medium"
-                  >
-                    刷新
-                  </button>
                 </div>
+
+                {/* 裝置模型外框 */}
+                <div className="flex justify-center pt-2">
+                  <div
+                    className={`relative mx-auto flex items-center justify-center ${
+                      previewMode === 'mobile'
+                        ? 'aspect-[9/16] max-h-[480px] w-full max-w-[280px]'
+                        : 'aspect-[16/10] max-h-[420px] w-full max-w-[420px]'
+                    } rounded-[32px] bg-slate-900/95 px-2 py-3 shadow-[0_24px_80px_rgba(15,23,42,0.75)] ring-1 ring-slate-900`}
+                  >
+                    {/* 裝置螢幕 */}
+                    <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-black ring-1 ring-slate-800">
+                      <iframe
+                        id="homepage-preview"
+                        key={`preview-${previewMode}-${homeConfigFormData.primaryColor}-${homeConfigFormData.gradientFrom}-${homeConfigFormData.gradientTo}`}
+                        src={`/?preview=true&primary=${encodeURIComponent(
+                          homeConfigFormData.primaryColor
+                        )}&gradientFrom=${encodeURIComponent(
+                          homeConfigFormData.gradientFrom
+                        )}&gradientTo=${encodeURIComponent(homeConfigFormData.gradientTo)}`}
+                        className="h-full w-full border-0"
+                        title="首頁預覽"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500 text-center">
+                  預覽模式：{previewMode === 'mobile' ? '手機版（9:16）' : '桌面版（16:10）'}
+                </p>
               </div>
-              <div 
-                className="border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-100 mx-auto"
-                style={previewMode === 'mobile' 
-                  ? { aspectRatio: '9/16', maxHeight: '80vh', width: '100%' }
-                  : { aspectRatio: '16/9', maxHeight: '80vh', width: '100%' }
-                }
-              >
-                <iframe
-                  id="homepage-preview"
-                  key={`preview-${previewMode}-${homeConfigFormData.primaryColor}-${homeConfigFormData.gradientFrom}-${homeConfigFormData.gradientTo}`}
-                  src={`/?preview=true&primary=${encodeURIComponent(homeConfigFormData.primaryColor)}&gradientFrom=${encodeURIComponent(homeConfigFormData.gradientFrom)}&gradientTo=${encodeURIComponent(homeConfigFormData.gradientTo)}`}
-                  className={`w-full h-full border-0 ${
-                    previewMode === 'mobile' 
-                      ? 'transform scale-75 origin-top-left'
-                      : 'transform scale-50 origin-top-left'
-                  }`}
-                  style={previewMode === 'mobile'
-                    ? { width: '133.33%', height: '133.33%' }
-                    : { width: '200%', height: '200%' }
-                  }
-                  title="首頁預覽"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                預覽比例：{previewMode === 'mobile' ? '手機版（9:16）' : '電腦版（16:9）'}
-              </p>
             </div>
           </div>
         </div>
       )}
-        </div>
-      </div>
     </div>
   );
 };

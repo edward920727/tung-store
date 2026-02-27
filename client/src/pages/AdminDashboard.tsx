@@ -62,38 +62,42 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">加載中...</div>
+      <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200/60 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+        <div className="text-sm text-slate-500">加載中...</div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">儀表板</h1>
-        <p className="mt-2 text-gray-600">歡迎回到管理後台</p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">儀表板</h1>
+        <p className="mt-1 text-sm text-slate-500">快速總覽商店表現與關鍵指標。</p>
       </div>
 
       {/* 統計卡片 */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
+              <div className="flex-shrink-0 rounded-lg bg-slate-900 px-3 py-2 text-lg">
                 <span className="text-2xl">🛍️</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">總產品數</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{stats.totalProducts}</dd>
+                  <dt className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    總產品數
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {stats.totalProducts}
+                  </dd>
                 </dl>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="pt-2">
               <Link
                 to="/admin/products"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                className="text-xs font-medium text-slate-600 hover:text-slate-900"
               >
                 查看所有產品 →
               </Link>
@@ -101,23 +105,27 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+        <div className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
+              <div className="flex-shrink-0 rounded-lg bg-emerald-500/10 px-3 py-2 text-lg text-emerald-600">
                 <span className="text-2xl">📦</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">總訂單數</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{stats.totalOrders}</dd>
+                  <dt className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    總訂單數
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {stats.totalOrders}
+                  </dd>
                 </dl>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="pt-2">
               <Link
                 to="/admin/orders"
-                className="text-sm font-medium text-green-600 hover:text-green-500"
+                className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
               >
                 查看所有訂單 →
               </Link>
@@ -125,40 +133,48 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+        <div className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
+              <div className="flex-shrink-0 rounded-lg bg-violet-500/10 px-3 py-2 text-lg text-violet-600">
                 <span className="text-2xl">💰</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">總營收</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">NT${stats.totalRevenue.toLocaleString()}</dd>
+                  <dt className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    總營收
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    NT${stats.totalRevenue.toLocaleString()}
+                  </dd>
                 </dl>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+        <div className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+              <div className="flex-shrink-0 rounded-lg bg-amber-500/10 px-3 py-2 text-lg text-amber-600">
                 <span className="text-2xl">⏳</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">待處理訂單</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{stats.pendingOrders}</dd>
+                  <dt className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    待處理訂單
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {stats.pendingOrders}
+                  </dd>
                 </dl>
               </div>
             </div>
             {stats.pendingOrders > 0 && (
-              <div className="mt-4">
+              <div className="pt-2">
                 <Link
                   to="/admin/orders"
-                  className="text-sm font-medium text-yellow-600 hover:text-yellow-500"
+                  className="text-xs font-medium text-amber-600 hover:text-amber-700"
                 >
                   處理訂單 →
                 </Link>
@@ -167,23 +183,27 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+        <div className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+              <div className="flex-shrink-0 rounded-lg bg-sky-500/10 px-3 py-2 text-lg text-sky-600">
                 <span className="text-2xl">👥</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">總會員數</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</dd>
+                  <dt className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    總會員數
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {stats.totalUsers}
+                  </dd>
                 </dl>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="pt-2">
               <Link
                 to="/admin/users"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                className="text-xs font-medium text-sky-600 hover:text-sky-700"
               >
                 查看所有會員 →
               </Link>
@@ -191,23 +211,27 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
+        <div className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0 bg-pink-500 rounded-md p-3">
+              <div className="flex-shrink-0 rounded-lg bg-rose-500/10 px-3 py-2 text-lg text-rose-600">
                 <span className="text-2xl">🎫</span>
               </div>
-              <div className="ml-5 w-0 flex-1">
+              <div className="ml-4 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">優惠券數</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{stats.totalCoupons}</dd>
+                  <dt className="truncate text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    優惠券數
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold text-slate-900">
+                    {stats.totalCoupons}
+                  </dd>
                 </dl>
               </div>
             </div>
-            <div className="mt-4">
+            <div className="pt-2">
               <Link
                 to="/admin/coupons"
-                className="text-sm font-medium text-pink-600 hover:text-pink-500"
+                className="text-xs font-medium text-rose-600 hover:text-rose-700"
               >
                 查看所有優惠券 →
               </Link>
@@ -217,47 +241,57 @@ const AdminDashboard = () => {
       </div>
 
       {/* 最近訂單 */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">最近訂單</h2>
+      <div className="rounded-xl border border-slate-200/60 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+        <div className="px-6 py-4 border-b border-slate-200/60">
+          <h2 className="text-sm font-semibold tracking-wide text-slate-900">最近訂單</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-200/60">
+            <thead className="bg-slate-50/80">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">訂單ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">金額</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">創建時間</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                  訂單ID
+                </th>
+                <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                  金額
+                </th>
+                <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                  狀態
+                </th>
+                <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                  創建時間
+                </th>
+                <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">
+                  操作
+                </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-200/60 bg-white">
               {recentOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-slate-500">
                     暫無訂單
                   </td>
                 </tr>
               ) : (
                 recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={order.id} className="hover:bg-slate-50/80">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                       #{order.id.slice(0, 8)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                       NT${order.total_amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           order.status === 'delivered'
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-emerald-100 text-emerald-800'
                             : order.status === 'paid'
-                            ? 'bg-blue-100 text-blue-800'
+                            ? 'bg-sky-100 text-sky-800'
                             : order.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-slate-100 text-slate-800'
                         }`}
                       >
                         {order.status === 'pending'
@@ -271,7 +305,7 @@ const AdminDashboard = () => {
                           : '已取消'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                       {order.created_at &&
                         (order.created_at instanceof Date
                           ? order.created_at.toLocaleString('zh-TW')
@@ -280,7 +314,7 @@ const AdminDashboard = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
                         to="/admin/orders"
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-slate-700 hover:text-slate-950 underline-offset-4 hover:underline"
                       >
                         查看詳情
                       </Link>
