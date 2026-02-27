@@ -3,9 +3,6 @@
  * 用于验证来自 edward727.com 的管理员访问权限
  */
 
-import { signInWithCustomToken } from 'firebase/auth';
-import { auth } from '../config/firebase';
-
 // 总部验证密钥（应该从环境变量或配置中获取，这里使用预设值）
 // 在实际部署时，应该从环境变量或安全的配置服务中获取
 // 注意：在 Vite/前端环境中不能使用 process.env，这里改用 import.meta.env
@@ -76,7 +73,7 @@ export const isHeadquartersVerified = (): boolean => {
     }
     
     const parsed = JSON.parse(authData);
-    const { verified, expiresAt, user } = parsed;
+    const { verified, expiresAt } = parsed;
     
     if (!verified) {
       return false;
@@ -148,35 +145,6 @@ export const processHeadquartersToken = async (): Promise<boolean> => {
   }
   
   return false;
-};
-
-/**
- * 檢查 token 是否為有效的 Firebase Custom Token 格式（三段 JWT）
- */
-const isValidFirebaseCustomToken = (token: string): boolean => {
-  if (!token || typeof token !== 'string') {
-    return false;
-  }
-  
-  // Firebase Custom Token 應該是三段 JWT，用點分隔
-  const parts = token.split('.');
-  return parts.length === 3;
-};
-
-/**
- * 調用後端 API 將總部 token 轉換成 Firebase Custom Token
- */
-const convertToFirebaseCustomToken = async (headquartersToken: string): Promise<string | null> => {
-  try {
-    // 這裡可以調用後端 API 來轉換 token
-    // 例如：POST /api/auth/convert-token
-    // 目前先返回 null，表示需要後端支援
-    console.log('需要後端 API 支援將總部 token 轉換成 Firebase Custom Token');
-    return null;
-  } catch (error) {
-    console.error('轉換 token 失敗:', error);
-    return null;
-  }
 };
 
 /**
