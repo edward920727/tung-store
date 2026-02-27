@@ -808,12 +808,25 @@ const Admin = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
+        {/* 頁面標題區：高級感、留白與字體節奏 */}
+        <header className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Dashboard</p>
+            <h1 className="mt-3 text-2xl font-light tracking-wide text-zinc-50">
+              商城後台管理
+            </h1>
+          </div>
+        </header>
+
+        {/* 內容區塊外框：黑白灰卡片感 */}
+        <div className="rounded-2xl border border-zinc-900 bg-zinc-900/60 shadow-sm backdrop-blur-sm p-6 space-y-10">
 
       {activeTab === 'coupons' && (
-        <div>
-          <div className="mb-4 flex justify-between">
-            <h2 className="text-xl font-semibold">優惠券列表</h2>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium tracking-wide text-zinc-100">優惠券列表</h2>
             <button
               onClick={() => {
                 setEditingCoupon(null);
@@ -831,15 +844,15 @@ const Admin = () => {
                 });
                 setShowCouponForm(true);
               }}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-4 py-2 rounded-md shadow-lg"
+              className="px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-800 transition-colors"
             >
               添加優惠券
             </button>
           </div>
 
           {showCouponForm && (
-            <div className="mb-6 bg-white shadow-xl rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">
+            <div className="bg-white/95 shadow-sm rounded-2xl p-6 border border-zinc-100">
+              <h3 className="text-base font-medium tracking-wide mb-4 text-zinc-900">
                 {editingCoupon ? '編輯優惠券' : '添加優惠券'}
               </h3>
               <form onSubmit={handleCouponSubmit}>
@@ -851,7 +864,7 @@ const Admin = () => {
                       value={couponFormData.code}
                       onChange={(e) => setCouponFormData({ ...couponFormData, code: e.target.value.toUpperCase() })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       placeholder="例如: SUMMER2024"
                     />
                   </div>
@@ -861,7 +874,7 @@ const Admin = () => {
                       value={couponFormData.discount_type}
                       onChange={(e) => setCouponFormData({ ...couponFormData, discount_type: e.target.value as 'percentage' | 'fixed' })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     >
                       <option value="percentage">百分比折扣</option>
                       <option value="fixed">固定金額</option>
@@ -877,7 +890,7 @@ const Admin = () => {
                       value={couponFormData.discount_value}
                       onChange={(e) => setCouponFormData({ ...couponFormData, discount_value: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     />
                   </div>
                   {couponFormData.discount_type === 'percentage' && (
@@ -888,7 +901,7 @@ const Admin = () => {
                         step="0.01"
                         value={couponFormData.max_discount}
                         onChange={(e) => setCouponFormData({ ...couponFormData, max_discount: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     />
                   </div>
                   )}
@@ -899,7 +912,7 @@ const Admin = () => {
                       step="0.01"
                       value={couponFormData.min_purchase}
                       onChange={(e) => setCouponFormData({ ...couponFormData, min_purchase: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     />
                   </div>
                   <div>
@@ -908,7 +921,7 @@ const Admin = () => {
                       type="number"
                       value={couponFormData.usage_limit}
                       onChange={(e) => setCouponFormData({ ...couponFormData, usage_limit: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     />
                   </div>
                       <div>
@@ -918,7 +931,7 @@ const Admin = () => {
                       value={couponFormData.valid_from}
                       onChange={(e) => setCouponFormData({ ...couponFormData, valid_from: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     />
                         </div>
                         <div>
@@ -928,7 +941,7 @@ const Admin = () => {
                       value={couponFormData.valid_until}
                       onChange={(e) => setCouponFormData({ ...couponFormData, valid_until: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                           />
                         </div>
                   <div className="col-span-2">
@@ -936,7 +949,7 @@ const Admin = () => {
                     <textarea
                       value={couponFormData.description}
                       onChange={(e) => setCouponFormData({ ...couponFormData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       rows={2}
                     />
                           </div>
@@ -952,10 +965,10 @@ const Admin = () => {
                     </label>
                           </div>
                 </div>
-                <div className="mt-4 flex space-x-4">
+                <div className="mt-6 flex gap-3">
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
+                    className="px-6 py-2 rounded-xl border border-zinc-900 bg-zinc-950 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-900 transition-colors"
                   >
                     保存
                   </button>
@@ -965,7 +978,7 @@ const Admin = () => {
                       setShowCouponForm(false);
                       setEditingCoupon(null);
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md"
+                    className="px-6 py-2 rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 text-sm hover:bg-zinc-200 transition-colors"
                   >
                     取消
                   </button>
@@ -975,22 +988,22 @@ const Admin = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-12">加載中...</div>
+            <div className="text-center py-12 text-zinc-400 text-sm tracking-wide">加載中...</div>
           ) : (
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="bg-white/95 shadow-sm rounded-2xl overflow-hidden border border-zinc-100">
+              <table className="min-w-full divide-y divide-zinc-100">
+                <thead className="bg-zinc-50/80">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">代碼</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">描述</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">折扣</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">有效期</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用情況</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">代碼</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">描述</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">折扣</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">有效期</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">使用情況</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">狀態</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">操作</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white/95 divide-y divide-zinc-100">
                   {coupons.map((coupon) => {
                     const validUntil = coupon.valid_until instanceof Timestamp 
                       ? coupon.valid_until.toDate() 
@@ -998,31 +1011,31 @@ const Admin = () => {
                     const isExpired = validUntil < new Date();
                     const isActive = coupon.is_active && !isExpired;
                     return (
-                      <tr key={coupon.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{coupon.code}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{coupon.description || '-'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <tr key={coupon.id} className="hover:bg-zinc-50/60 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-zinc-900 tracking-wide">{coupon.code}</td>
+                        <td className="px-6 py-4 text-sm text-zinc-700">{coupon.description || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
                           {coupon.discount_type === 'percentage' 
                             ? `${coupon.discount_value}%` 
                             : `NT$${coupon.discount_value}`}
                           {coupon.max_discount && coupon.discount_type === 'percentage' && (
-                            <span className="text-xs text-gray-500"> (最高NT${coupon.max_discount})</span>
+                            <span className="text-xs text-zinc-500"> (最高NT${coupon.max_discount})</span>
                           )}
                       </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
                           <div>{coupon.valid_from instanceof Timestamp 
                             ? coupon.valid_from.toDate().toLocaleDateString('zh-CN')
                             : new Date(coupon.valid_from).toLocaleDateString('zh-CN')}</div>
-                          <div className="text-xs text-gray-500">至 {coupon.valid_until instanceof Timestamp
+                          <div className="text-xs text-zinc-500">至 {coupon.valid_until instanceof Timestamp
                             ? coupon.valid_until.toDate().toLocaleDateString('zh-CN')
                             : new Date(coupon.valid_until).toLocaleDateString('zh-CN')}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
                           {coupon.used_count} / {coupon.usage_limit || '∞'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-200 text-zinc-700'
                           }`}>
                             {isActive ? '有效' : '無效'}
                           </span>
@@ -1030,13 +1043,13 @@ const Admin = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
                             onClick={() => handleEditCoupon(coupon)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-zinc-700 hover:text-zinc-950 underline-offset-4 hover:underline"
                         >
                           編輯
                         </button>
                         <button
                             onClick={() => handleDeleteCoupon(coupon.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-700 underline-offset-4 hover:underline"
                         >
                           刪除
                         </button>
@@ -1052,9 +1065,9 @@ const Admin = () => {
       )}
 
       {activeTab === 'membership' && (
-        <div>
-          <div className="mb-4 flex justify-between">
-            <h2 className="text-xl font-semibold">會員等級列表</h2>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium tracking-wide text-zinc-100">會員等級列表</h2>
             <button
               onClick={() => {
                 setEditingMembership(null);
@@ -1075,8 +1088,8 @@ const Admin = () => {
           </div>
 
           {showMembershipForm && (
-            <div className="mb-6 bg-white shadow-xl rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">
+            <div className="bg-white/95 shadow-sm rounded-2xl p-6 border border-zinc-100">
+              <h3 className="text-base font-medium tracking-wide mb-4 text-zinc-900">
                 {editingMembership ? '編輯會員等級' : '添加會員等級'}
               </h3>
               <form onSubmit={handleMembershipSubmit}>
@@ -1088,7 +1101,7 @@ const Admin = () => {
                       value={membershipFormData.name}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, name: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       placeholder="例如: 金卡會員"
                     />
                   </div>
@@ -1099,7 +1112,7 @@ const Admin = () => {
                       value={membershipFormData.min_points}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, min_points: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       placeholder="例如: 2000"
                     />
                   </div>
@@ -1111,7 +1124,7 @@ const Admin = () => {
                       value={membershipFormData.discount_percentage}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, discount_percentage: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       placeholder="例如: 10"
                     />
                   </div>
@@ -1121,7 +1134,7 @@ const Admin = () => {
                       type="text"
                       value={membershipFormData.icon}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, icon: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       placeholder="例如: 👑"
                     />
                   </div>
@@ -1132,13 +1145,13 @@ const Admin = () => {
                         type="color"
                         value={membershipFormData.color}
                         onChange={(e) => setMembershipFormData({ ...membershipFormData, color: e.target.value })}
-                        className="w-16 h-10 border border-gray-300 rounded-md cursor-pointer"
+                        className="w-16 h-10 border border-gray-200 rounded-xl cursor-pointer"
                       />
                       <input
                         type="text"
                         value={membershipFormData.color}
                         onChange={(e) => setMembershipFormData({ ...membershipFormData, color: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                         placeholder="#6B7280"
                       />
                     </div>
@@ -1148,16 +1161,16 @@ const Admin = () => {
                     <textarea
                       value={membershipFormData.description}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       rows={2}
                       placeholder="例如: 消費滿2000元可升級"
                     />
                   </div>
                 </div>
-                <div className="mt-4 flex space-x-4">
+                <div className="mt-6 flex gap-3">
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
+                    className="px-6 py-2 rounded-xl border border-zinc-900 bg-zinc-950 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-900 transition-colors"
                   >
                     保存
                   </button>
@@ -1167,7 +1180,7 @@ const Admin = () => {
                       setShowMembershipForm(false);
                       setEditingMembership(null);
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md"
+                    className="px-6 py-2 rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 text-sm hover:bg-zinc-200 transition-colors"
                   >
                     取消
                   </button>
@@ -1177,50 +1190,50 @@ const Admin = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-12">加載中...</div>
+            <div className="text-center py-12 text-zinc-400 text-sm tracking-wide">加載中...</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {membershipLevels.map((level) => (
                 <div
                   key={level.id}
-                  className="bg-white shadow-lg rounded-lg p-6 border-2"
+                  className="bg-white/95 shadow-sm rounded-2xl p-6 border-2"
                   style={{ borderColor: level.color }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">{level.icon}</span>
                       <div>
-                        <h3 className="text-xl font-bold" style={{ color: level.color }}>
+                        <h3 className="text-lg font-semibold tracking-wide" style={{ color: level.color }}>
                           {level.name}
                         </h3>
-                        <p className="text-sm text-gray-600">{level.description}</p>
+                        <p className="text-sm text-zinc-600">{level.description}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditMembership(level)}
-                        className="text-blue-600 hover:text-blue-900 text-sm"
+                        className="text-zinc-700 hover:text-zinc-950 text-sm underline-offset-4 hover:underline"
                       >
                         編輯
                       </button>
                       <button
                         onClick={() => handleDeleteMembership(level.id)}
-                        className="text-red-600 hover:text-red-900 text-sm"
+                        className="text-red-600 hover:text-red-700 text-sm underline-offset-4 hover:underline"
                       >
                         刪除
                       </button>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">折扣:</span>
-                      <span className="font-semibold" style={{ color: level.color }}>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">折扣</span>
+                      <span className="font-semibold tracking-wide" style={{ color: level.color }}>
                         {level.discount_percentage}%
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">最低積分:</span>
-                      <span className="font-semibold">{level.min_points}</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-600">最低積分</span>
+                      <span className="font-semibold tracking-wide">{level.min_points}</span>
                     </div>
                   </div>
                 </div>
@@ -1231,22 +1244,22 @@ const Admin = () => {
       )}
 
       {activeTab === 'users' && (
-        <div>
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">會員列表</h2>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-medium tracking-wide text-zinc-100">會員列表</h2>
           </div>
 
           {showUserEditForm && editingUser && (
-            <div className="mb-6 bg-white shadow-xl rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">編輯會員信息</h3>
+            <div className="bg-white/95 shadow-sm rounded-2xl p-6 border border-zinc-100">
+              <h3 className="text-base font-medium tracking-wide mb-4 text-zinc-900">編輯會員信息</h3>
               <div className="mb-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-zinc-600">
                   <strong>用戶名:</strong> {editingUser.username}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-zinc-600">
                   <strong>郵箱:</strong> {editingUser.email}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-zinc-600">
                   <strong>角色:</strong> {editingUser.role === 'admin' ? '管理員' : '普通用戶'}
                 </p>
               </div>
@@ -1258,7 +1271,7 @@ const Admin = () => {
                       value={userEditFormData.role}
                       onChange={(e) => setUserEditFormData({ ...userEditFormData, role: e.target.value as 'user' | 'admin' })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     >
                       <option value="user">普通用戶</option>
                       <option value="admin">管理員</option>
@@ -1270,7 +1283,7 @@ const Admin = () => {
                       value={userEditFormData.membership_level_id}
                       onChange={(e) => setUserEditFormData({ ...userEditFormData, membership_level_id: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                     >
                       {membershipLevels.map((level) => (
                         <option key={level.id} value={level.id}>
@@ -1286,16 +1299,16 @@ const Admin = () => {
                       value={userEditFormData.points}
                       onChange={(e) => setUserEditFormData({ ...userEditFormData, points: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
                       placeholder="例如: 1000"
                     />
-                    <p className="text-xs text-gray-500 mt-1">修改積分會自動更新會員等級</p>
+                    <p className="text-xs text-zinc-500 mt-1">修改積分會自動更新會員等級</p>
                   </div>
                 </div>
-                <div className="mt-4 flex space-x-4">
+                <div className="mt-6 flex gap-3">
                   <button
                     type="submit"
-                    className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg"
+                    className="px-6 py-2 rounded-xl border border-zinc-900 bg-zinc-950 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-900 transition-colors"
                   >
                     保存
                   </button>
@@ -1305,7 +1318,7 @@ const Admin = () => {
                       setShowUserEditForm(false);
                       setEditingUser(null);
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md"
+                    className="px-6 py-2 rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 text-sm hover:bg-zinc-200 transition-colors"
                   >
                     取消
                   </button>
@@ -1315,34 +1328,34 @@ const Admin = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-12">加載中...</div>
+            <div className="text-center py-12 text-zinc-400 text-sm tracking-wide">加載中...</div>
           ) : (
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="bg-white/95 shadow-sm rounded-2xl overflow-hidden border border-zinc-100">
+              <table className="min-w-full divide-y divide-zinc-100">
+                <thead className="bg-zinc-50/80">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">用戶名</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">郵箱</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">角色</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">會員等級</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">積分</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">總消費</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">註冊時間</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">ID</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">用戶名</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">郵箱</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">角色</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">會員等級</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">積分</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">總消費</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">註冊時間</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">操作</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white/95 divide-y divide-zinc-100">
                   {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id.slice(0, 8)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.username}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
+                    <tr key={user.id} className="hover:bg-zinc-50/60 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.id.slice(0, 8)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.username}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 text-xs rounded-full ${
                           user.role === 'admin' 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-gray-100 text-gray-800'
+                            ? 'bg-zinc-900 text-zinc-50' 
+                            : 'bg-zinc-100 text-zinc-700'
                         }`}>
                           {user.role === 'admin' ? '管理員' : '普通用戶'}
                         </span>
@@ -1350,16 +1363,16 @@ const Admin = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center gap-2">
                           <span>{user.icon || '⭐'}</span>
-                          <span style={{ color: user.color || '#6B7280' }}>
+                          <span className="text-zinc-800" style={{ color: user.color || '#6B7280' }}>
                             {user.membership_name || '普通會員'}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.points || 0}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.points || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
                         ${(user.total_spent || 0).toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
                         {user.created_at && (user.created_at instanceof Timestamp
                           ? user.created_at.toDate().toLocaleDateString('zh-TW')
                           : new Date(user.created_at).toLocaleDateString('zh-TW'))}
@@ -1367,20 +1380,20 @@ const Admin = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-zinc-700 hover:text-zinc-950 underline-offset-4 hover:underline"
                         >
                           編輯
                         </button>
                         {firebaseUser && user.id !== firebaseUser.uid && (
                           <button
                             onClick={() => handleDeleteUser(user.id, user.email)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-700 underline-offset-4 hover:underline"
                           >
                             刪除
                           </button>
                         )}
                         {firebaseUser && user.id === firebaseUser.uid && (
-                          <span className="text-gray-400 text-xs">（當前用戶）</span>
+                          <span className="text-zinc-400 text-xs">（當前用戶）</span>
                         )}
                       </td>
                     </tr>
@@ -1388,7 +1401,7 @@ const Admin = () => {
                 </tbody>
               </table>
               {users.length === 0 && (
-                <div className="text-center py-12 text-gray-500">暫無會員</div>
+                <div className="text-center py-12 text-zinc-500 text-sm tracking-wide">暫無會員</div>
               )}
             </div>
           )}
@@ -1401,8 +1414,8 @@ const Admin = () => {
           <div className="lg:col-span-1">
             {/* 側邊導覽列 */}
             <div className="w-full mb-4">
-              <div className="bg-white shadow-lg rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-4 text-gray-900">功能導覽</h3>
+              <div className="bg-white/95 shadow-sm rounded-2xl p-4 border border-zinc-100">
+                <h3 className="text-sm font-medium tracking-wide mb-4 text-zinc-900">功能導覽</h3>
                 <nav className="space-y-1">
                   {[
                     { id: 'hero', label: 'Hero 區域', icon: '🎯' },
@@ -1418,10 +1431,10 @@ const Admin = () => {
                       onClick={() => {
                         setActiveHomepageSection(item.id);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium tracking-wide transition-colors ${
                         activeHomepageSection === item.id
-                          ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-zinc-900 text-zinc-50 shadow-sm'
+                          : 'text-zinc-600 hover:bg-zinc-100'
                       }`}
                     >
                       <span className="mr-2">{item.icon}</span>
@@ -1440,13 +1453,13 @@ const Admin = () => {
               <form onSubmit={handleHomePageConfigSubmit} className="space-y-6">
                 {/* ========== Hero 區域設置（包含輪播） ========== */}
                 {activeHomepageSection === 'hero' && (
-                  <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="bg-white/95 shadow-sm rounded-2xl overflow-hidden border border-zinc-100">
+                    <div className="px-6 py-4 border-b border-zinc-100">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">Hero 區域設置</h3>
-                          <p className="text-sm text-gray-600">設置首頁 Hero 區域的標題、背景圖和輪播功能</p>
+                          <h3 className="text-sm font-medium tracking-wide text-zinc-900">Hero 區域設置</h3>
+                          <p className="text-xs text-zinc-600 mt-1">設置首頁 Hero 區域的標題、背景圖和輪播功能</p>
                         </div>
                       </div>
                     </div>
@@ -3165,6 +3178,8 @@ const Admin = () => {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 };
