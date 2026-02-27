@@ -22,6 +22,14 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { SortableItem } from '../components/SortableItem';
 import { SuccessAnimation } from '../components/SuccessAnimation';
+import {
+  TicketPercent,
+  Sparkles,
+  Users as UsersIcon,
+  MonitorSmartphone,
+  Palette,
+  LayoutTemplate,
+} from 'lucide-react';
 
 const Admin = () => {
   const { firebaseUser } = useAuth();
@@ -1094,7 +1102,10 @@ const Admin = () => {
       {activeTab === 'membership' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium tracking-wide text-zinc-100">會員等級列表</h2>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-slate-500" />
+              <h2 className="text-sm font-semibold tracking-wide text-slate-900">會員等級列表</h2>
+            </div>
             <button
               onClick={() => {
                 setEditingMembership(null);
@@ -1108,87 +1119,87 @@ const Admin = () => {
                 });
                 setShowMembershipForm(true);
               }}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-4 py-2 rounded-md shadow-lg"
+              className="px-4 py-2 rounded-xl border border-slate-200/70 bg-white text-xs font-medium tracking-wide text-slate-800 shadow-[0_8px_30px_rgba(15,23,42,0.04)] hover:bg-slate-50"
             >
               添加會員等級
             </button>
           </div>
 
           {showMembershipForm && (
-            <div className="bg-white/95 shadow-sm rounded-2xl p-6 border border-zinc-100">
-              <h3 className="text-base font-medium tracking-wide mb-4 text-zinc-900">
+            <div className="rounded-xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-6">
+              <h3 className="text-sm font-semibold tracking-wide text-slate-900">
                 {editingMembership ? '編輯會員等級' : '添加會員等級'}
               </h3>
               <form onSubmit={handleMembershipSubmit}>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">等級名稱 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">等級名稱 *</label>
                     <input
                       type="text"
                       value={membershipFormData.name}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, name: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       placeholder="例如: 金卡會員"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">最低積分 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">最低積分 *</label>
                     <input
                       type="number"
                       value={membershipFormData.min_points}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, min_points: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       placeholder="例如: 2000"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">折扣百分比 (%) *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">折扣百分比 (%) *</label>
                     <input
                       type="number"
                       step="0.1"
                       value={membershipFormData.discount_percentage}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, discount_percentage: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       placeholder="例如: 10"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">圖標</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">圖標</label>
                     <input
                       type="text"
                       value={membershipFormData.icon}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, icon: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       placeholder="例如: 👑"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">顏色</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">顏色</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="color"
                         value={membershipFormData.color}
                         onChange={(e) => setMembershipFormData({ ...membershipFormData, color: e.target.value })}
-                        className="w-16 h-10 border border-gray-200 rounded-xl cursor-pointer"
+                        className="w-16 h-10 rounded-xl border border-slate-200/60 bg-white cursor-pointer"
                       />
                       <input
                         type="text"
                         value={membershipFormData.color}
                         onChange={(e) => setMembershipFormData({ ...membershipFormData, color: e.target.value })}
-                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                        className="flex-1 rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         placeholder="#6B7280"
                       />
                     </div>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">描述</label>
                     <textarea
                       value={membershipFormData.description}
                       onChange={(e) => setMembershipFormData({ ...membershipFormData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       rows={2}
                       placeholder="例如: 消費滿2000元可升級"
                     />
@@ -1197,7 +1208,7 @@ const Admin = () => {
                 <div className="mt-6 flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 rounded-xl border border-zinc-900 bg-zinc-950 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-900 transition-colors"
+                    className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm hover:bg-slate-800"
                   >
                     保存
                   </button>
@@ -1207,7 +1218,7 @@ const Admin = () => {
                       setShowMembershipForm(false);
                       setEditingMembership(null);
                     }}
-                    className="px-6 py-2 rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 text-sm hover:bg-zinc-200 transition-colors"
+                    className="px-6 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 hover:bg-slate-100"
                   >
                     取消
                   </button>
@@ -1217,49 +1228,49 @@ const Admin = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-12 text-zinc-400 text-sm tracking-wide">加載中...</div>
+            <div className="text-center py-12 text-sm tracking-wide text-slate-400">加載中...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {membershipLevels.map((level) => (
                 <div
                   key={level.id}
-                  className="bg-white/95 shadow-sm rounded-2xl p-6 border-2"
+                  className="rounded-xl border border-slate-200/60 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
                   style={{ borderColor: level.color }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">{level.icon}</span>
                       <div>
-                        <h3 className="text-lg font-semibold tracking-wide" style={{ color: level.color }}>
+                        <h3 className="text-sm font-semibold tracking-wide" style={{ color: level.color }}>
                           {level.name}
                         </h3>
-                        <p className="text-sm text-zinc-600">{level.description}</p>
+                        <p className="text-xs text-slate-500">{level.description}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditMembership(level)}
-                        className="text-zinc-700 hover:text-zinc-950 text-sm underline-offset-4 hover:underline"
+                        className="text-xs text-slate-700 hover:text-slate-950 underline-offset-4 hover:underline"
                       >
                         編輯
                       </button>
                       <button
                         onClick={() => handleDeleteMembership(level.id)}
-                        className="text-red-600 hover:text-red-700 text-sm underline-offset-4 hover:underline"
+                        className="text-xs text-red-600 hover:text-red-700 underline-offset-4 hover:underline"
                       >
                         刪除
                       </button>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-600">折扣</span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500">折扣</span>
                       <span className="font-semibold tracking-wide" style={{ color: level.color }}>
                         {level.discount_percentage}%
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-600">最低積分</span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500">最低積分</span>
                       <span className="font-semibold tracking-wide">{level.min_points}</span>
                     </div>
                   </div>
@@ -1272,45 +1283,46 @@ const Admin = () => {
 
       {activeTab === 'users' && (
         <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-medium tracking-wide text-zinc-100">會員列表</h2>
+          <div className="flex items-center gap-2">
+            <UsersIcon className="h-4 w-4 text-slate-500" />
+            <h2 className="text-sm font-semibold tracking-wide text-slate-900">會員列表</h2>
           </div>
 
           {showUserEditForm && editingUser && (
-            <div className="bg-white/95 shadow-sm rounded-2xl p-6 border border-zinc-100">
-              <h3 className="text-base font-medium tracking-wide mb-4 text-zinc-900">編輯會員信息</h3>
+            <div className="rounded-xl border border-slate-200/60 bg-white p-8 shadow-[0_8px_30px_rgba(15,23,42,0.04)] space-y-4">
+              <h3 className="text-sm font-semibold tracking-wide text-slate-900">編輯會員信息</h3>
               <div className="mb-4">
-                <p className="text-sm text-zinc-600">
+                <p className="text-xs text-slate-600">
                   <strong>用戶名:</strong> {editingUser.username}
                 </p>
-                <p className="text-sm text-zinc-600">
+                <p className="text-xs text-slate-600">
                   <strong>郵箱:</strong> {editingUser.email}
                 </p>
-                <p className="text-sm text-zinc-600">
+                <p className="text-xs text-slate-600">
                   <strong>角色:</strong> {editingUser.role === 'admin' ? '管理員' : '普通用戶'}
                 </p>
               </div>
               <form onSubmit={handleUserEditSubmit}>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">角色 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">角色 *</label>
                     <select
                       value={userEditFormData.role}
                       onChange={(e) => setUserEditFormData({ ...userEditFormData, role: e.target.value as 'user' | 'admin' })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     >
                       <option value="user">普通用戶</option>
                       <option value="admin">管理員</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">會員等級 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">會員等級 *</label>
                     <select
                       value={userEditFormData.membership_level_id}
                       onChange={(e) => setUserEditFormData({ ...userEditFormData, membership_level_id: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     >
                       {membershipLevels.map((level) => (
                         <option key={level.id} value={level.id}>
@@ -1320,22 +1332,22 @@ const Admin = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">積分 *</label>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">積分 *</label>
                     <input
                       type="number"
                       value={userEditFormData.points}
                       onChange={(e) => setUserEditFormData({ ...userEditFormData, points: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       placeholder="例如: 1000"
                     />
-                    <p className="text-xs text-zinc-500 mt-1">修改積分會自動更新會員等級</p>
+                    <p className="mt-1 text-[11px] text-slate-500">修改積分會自動更新會員等級</p>
                   </div>
                 </div>
                 <div className="mt-6 flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-2 rounded-xl border border-zinc-900 bg-zinc-950 text-zinc-50 text-sm font-medium tracking-wide shadow-sm hover:bg-zinc-900 transition-colors"
+                    className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm hover:bg-slate-800"
                   >
                     保存
                   </button>
@@ -1345,7 +1357,7 @@ const Admin = () => {
                       setShowUserEditForm(false);
                       setEditingUser(null);
                     }}
-                    className="px-6 py-2 rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 text-sm hover:bg-zinc-200 transition-colors"
+                    className="px-6 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 hover:bg-slate-100"
                   >
                     取消
                   </button>
@@ -1355,51 +1367,53 @@ const Admin = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-12 text-zinc-400 text-sm tracking-wide">加載中...</div>
+            <div className="text-center py-12 text-sm tracking-wide text-slate-400">加載中...</div>
           ) : (
-            <div className="bg-white/95 shadow-sm rounded-2xl overflow-hidden border border-zinc-100">
-              <table className="min-w-full divide-y divide-zinc-100">
-                <thead className="bg-zinc-50/80">
+            <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+              <table className="min-w-full divide-y divide-slate-200/60">
+                <thead className="bg-slate-50/80">
                   <tr>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">ID</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">用戶名</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">郵箱</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">角色</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">會員等級</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">積分</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">總消費</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">註冊時間</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">操作</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">ID</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">用戶名</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">郵箱</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">角色</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">會員等級</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">積分</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">總消費</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">註冊時間</th>
+                    <th className="px-6 py-3 text-left text-[11px] font-medium tracking-[0.18em] text-slate-500 uppercase">操作</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white/95 divide-y divide-zinc-100">
+                <tbody className="divide-y divide-slate-200/60 bg-white">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-zinc-50/60 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.id.slice(0, 8)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.username}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.email}</td>
+                    <tr key={user.id} className="transition-colors hover:bg-slate-50/80">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{user.id.slice(0, 8)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{user.username}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{user.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          user.role === 'admin' 
-                            ? 'bg-zinc-900 text-zinc-50' 
-                            : 'bg-zinc-100 text-zinc-700'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            user.role === 'admin'
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
                           {user.role === 'admin' ? '管理員' : '普通用戶'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center gap-2">
                           <span>{user.icon || '⭐'}</span>
-                          <span className="text-zinc-800" style={{ color: user.color || '#6B7280' }}>
+                          <span className="text-slate-800" style={{ color: user.color || '#6B7280' }}>
                             {user.membership_name || '普通會員'}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">{user.points || 0}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{user.points || 0}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                         ${(user.total_spent || 0).toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                         {user.created_at && (user.created_at instanceof Timestamp
                           ? user.created_at.toDate().toLocaleDateString('zh-TW')
                           : new Date(user.created_at).toLocaleDateString('zh-TW'))}
@@ -1407,7 +1421,7 @@ const Admin = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="text-zinc-700 hover:text-zinc-950 underline-offset-4 hover:underline"
+                          className="text-slate-700 hover:text-slate-950 underline-offset-4 hover:underline"
                         >
                           編輯
                         </button>
@@ -1420,7 +1434,7 @@ const Admin = () => {
                           </button>
                         )}
                         {firebaseUser && user.id === firebaseUser.uid && (
-                          <span className="text-zinc-400 text-xs">（當前用戶）</span>
+                          <span className="text-slate-400 text-xs">（當前用戶）</span>
                         )}
                       </td>
                     </tr>
@@ -1428,7 +1442,7 @@ const Admin = () => {
                 </tbody>
               </table>
               {users.length === 0 && (
-                <div className="text-center py-12 text-zinc-500 text-sm tracking-wide">暫無會員</div>
+                <div className="text-center py-12 text-sm tracking-wide text-slate-500">暫無會員</div>
               )}
             </div>
           )}
@@ -1441,17 +1455,20 @@ const Admin = () => {
           <div className="lg:col-span-1">
             {/* 側邊導覽列 */}
             <div className="w-full mb-4">
-              <div className="bg-white/95 shadow-sm rounded-2xl p-4 border border-zinc-100">
-                <h3 className="text-sm font-medium tracking-wide mb-4 text-zinc-900">功能導覽</h3>
+              <div className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+                <h3 className="mb-4 flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-900">
+                  <LayoutTemplate className="h-4 w-4 text-slate-500" />
+                  功能導覽
+                </h3>
                 <nav className="space-y-1">
                   {[
-                    { id: 'hero', label: 'Hero 區域', icon: '🎯' },
-                    { id: 'colors', label: '顏色主題', icon: '🎨' },
-                    { id: 'layout', label: '布局設置', icon: '📐' },
-                    { id: 'features', label: '特色區塊', icon: '⭐' },
-                    { id: 'sections', label: '區塊順序', icon: '📋' },
-                    { id: 'products', label: '精選商品', icon: '🛍️' },
-                    { id: 'custom', label: '自訂區塊', icon: '🧩' },
+                    { id: 'hero', label: 'Hero 區域', icon: <MonitorSmartphone className="h-3.5 w-3.5" /> },
+                    { id: 'colors', label: '顏色主題', icon: <Palette className="h-3.5 w-3.5" /> },
+                    { id: 'layout', label: '布局設置', icon: <LayoutTemplate className="h-3.5 w-3.5" /> },
+                    { id: 'features', label: '特色區塊', icon: <Sparkles className="h-3.5 w-3.5" /> },
+                    { id: 'sections', label: '區塊順序', icon: <TicketPercent className="h-3.5 w-3.5" /> },
+                    { id: 'products', label: '精選商品', icon: <MonitorSmartphone className="h-3.5 w-3.5" /> },
+                    { id: 'custom', label: '自訂區塊', icon: <LayoutTemplate className="h-3.5 w-3.5" /> },
                   ].map((item) => (
                     <button
                       key={item.id}
@@ -1460,11 +1477,13 @@ const Admin = () => {
                       }}
                       className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium tracking-wide transition-colors ${
                         activeHomepageSection === item.id
-                          ? 'bg-zinc-900 text-zinc-50 shadow-sm'
-                          : 'text-zinc-600 hover:bg-zinc-100'
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      <span className="mr-2">{item.icon}</span>
+                      <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                        {item.icon}
+                      </span>
                       {item.label}
                     </button>
                   ))}
@@ -1499,7 +1518,7 @@ const Admin = () => {
                         value={homeConfigFormData.heroTitle}
                         onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroTitle: e.target.value })}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         placeholder="時尚女裝精品店"
                       />
                     </div>
@@ -1510,7 +1529,7 @@ const Admin = () => {
                         value={homeConfigFormData.heroSubtitle}
                         onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroSubtitle: e.target.value })}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         placeholder="發現最新時尚潮流，展現獨特個人風格"
                       />
                     </div>
@@ -1521,7 +1540,7 @@ const Admin = () => {
                         value={homeConfigFormData.heroButtonText}
                         onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonText: e.target.value })}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         placeholder="瀏覽商品"
                       />
                     </div>
@@ -1532,7 +1551,7 @@ const Admin = () => {
                         value={homeConfigFormData.heroButtonLink}
                         onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroButtonLink: e.target.value })}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         placeholder="/products"
                       />
                     </div>
@@ -1543,7 +1562,7 @@ const Admin = () => {
                         onDrop={(e) => handleImageDrop(e, 'hero')}
                         onDragOver={(e) => e.preventDefault()}
                         onDragEnter={(e) => e.preventDefault()}
-                        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pink-500 transition-colors cursor-pointer"
+                        className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-sm text-slate-500 hover:border-slate-400 transition-colors cursor-pointer"
                         onClick={() => document.getElementById('hero-image-upload')?.click()}
                       >
                         <input
@@ -1580,7 +1599,7 @@ const Admin = () => {
                         type="url"
                         value={homeConfigFormData.heroBackgroundImage}
                         onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroBackgroundImage: e.target.value })}
-                        className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                        className="mt-2 w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         placeholder="或直接輸入圖片 URL"
                       />
                     </div>
@@ -1616,7 +1635,7 @@ const Admin = () => {
                               step="500"
                               value={homeConfigFormData.heroCarouselSpeed}
                               onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, heroCarouselSpeed: parseInt(e.target.value) || 3000 })}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                              className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                               placeholder="3000"
                             />
                             <p className="text-xs text-gray-500 mt-1">
@@ -1706,7 +1725,7 @@ const Admin = () => {
                             onDrop={handleCarouselImageDrop}
                             onDragOver={(e) => e.preventDefault()}
                             onDragEnter={(e) => e.preventDefault()}
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pink-500 transition-colors cursor-pointer"
+                            className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center text-sm text-slate-500 hover:border-slate-400 transition-colors cursor-pointer"
                             onClick={() => document.getElementById('carousel-image-upload')?.click()}
                           >
                             <input
@@ -1734,7 +1753,7 @@ const Admin = () => {
                       type="button"
                       onClick={() => handleSaveSection('hero')}
                       disabled={savingSection === 'hero'}
-                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm transition-colors duration-200 disabled:border-slate-300 disabled:bg-slate-200 flex items-center gap-2"
                     >
                       {savingSection === 'hero' ? (
                         <>
@@ -1801,7 +1820,7 @@ const Admin = () => {
                             DEFAULT_COLORS.gradientTo
                           );
                         }}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1832,7 +1851,7 @@ const Admin = () => {
                               setHomeConfigFormData({ ...homeConfigFormData, primaryColor: newColor });
                               updatePreviewColors(newColor, homeConfigFormData.secondaryColor, homeConfigFormData.gradientFrom, homeConfigFormData.gradientTo);
                             }}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            className="flex-1 rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-xs font-mono text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                             placeholder="#EC4899"
                           />
                         </div>
@@ -1859,7 +1878,7 @@ const Admin = () => {
                               setHomeConfigFormData({ ...homeConfigFormData, secondaryColor: newColor });
                               updatePreviewColors(homeConfigFormData.primaryColor, newColor, homeConfigFormData.gradientFrom, homeConfigFormData.gradientTo);
                             }}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            className="flex-1 rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-xs font-mono text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                             placeholder="#8B5CF6"
                           />
                         </div>
@@ -1888,7 +1907,7 @@ const Admin = () => {
                               setHomeConfigFormData({ ...homeConfigFormData, gradientFrom: newColor });
                               updatePreviewColors(homeConfigFormData.primaryColor, homeConfigFormData.secondaryColor, newColor, homeConfigFormData.gradientTo);
                             }}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            className="flex-1 rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-xs font-mono text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                             placeholder="#EC4899"
                           />
                         </div>
@@ -1915,7 +1934,7 @@ const Admin = () => {
                               setHomeConfigFormData({ ...homeConfigFormData, gradientTo: newColor });
                               updatePreviewColors(homeConfigFormData.primaryColor, homeConfigFormData.secondaryColor, homeConfigFormData.gradientFrom, newColor);
                             }}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm font-mono"
+                            className="flex-1 rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-xs font-mono text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                             placeholder="#8B5CF6"
                           />
                         </div>
@@ -1939,7 +1958,7 @@ const Admin = () => {
                       type="button"
                       onClick={() => handleSaveSection('colors')}
                       disabled={savingSection === 'colors'}
-                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm transition-colors duration-200 disabled:border-slate-300 disabled:bg-slate-200 flex items-center gap-2"
                     >
                       {savingSection === 'colors' ? (
                         <>
@@ -1982,7 +2001,7 @@ const Admin = () => {
                       <select
                         value={homeConfigFormData.layout}
                         onChange={(e) => setHomeConfigFormData({ ...homeConfigFormData, layout: e.target.value as 'default' | 'compact' | 'wide' })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                      className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       >
                         <option value="default">默認</option>
                         <option value="compact">緊湊</option>
@@ -2017,7 +2036,7 @@ const Admin = () => {
                       type="button"
                       onClick={() => handleSaveSection('layout')}
                       disabled={savingSection === 'layout'}
-                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm transition-colors duration-200 disabled:border-slate-300 disabled:bg-slate-200 flex items-center gap-2"
                     >
                       {savingSection === 'layout' ? (
                         <>
@@ -2069,7 +2088,7 @@ const Admin = () => {
                           });
                           setShowFeatureForm(true);
                         }}
-                        className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-sm font-medium rounded-md shadow-sm"
+                        className="px-4 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm"
                       >
                         + 新增特色區塊
                       </button>
@@ -2198,7 +2217,7 @@ const Admin = () => {
                           type="text"
                           value={featureFormData.title}
                           onChange={(e) => setFeatureFormData({ ...featureFormData, title: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                           placeholder="例如：時尚精選"
                         />
                       </div>
@@ -2208,7 +2227,7 @@ const Admin = () => {
                           type="text"
                           value={featureFormData.icon}
                           onChange={(e) => setFeatureFormData({ ...featureFormData, icon: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                           placeholder="例如：👗"
                           maxLength={2}
                         />
@@ -2220,7 +2239,7 @@ const Admin = () => {
                           value={featureFormData.description}
                           onChange={(e) => setFeatureFormData({ ...featureFormData, description: e.target.value })}
                           rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500"
+                          className="w-full rounded-xl border border-slate-200/60 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                           placeholder="例如：精選最新流行女裝，涵蓋各種風格、尺碼和場合"
                         />
                       </div>
@@ -2324,7 +2343,7 @@ const Admin = () => {
                       type="button"
                       onClick={() => handleSaveSection('features')}
                       disabled={savingSection === 'features'}
-                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-md shadow-lg font-medium transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-2 rounded-xl border border-slate-900 bg-slate-900 text-xs font-medium tracking-wide text-white shadow-sm transition-colors duration-200 disabled:border-slate-300 disabled:bg-slate-200 flex items-center gap-2"
                     >
                       {savingSection === 'features' ? (
                         <>
