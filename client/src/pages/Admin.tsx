@@ -3206,8 +3206,8 @@ const Admin = () => {
                   <div
                     className={`relative mx-auto flex items-center justify-center ${
                       previewMode === 'mobile'
-                        ? 'aspect-[9/16] max-h-[480px] w-full max-w-[280px]'
-                        : 'aspect-[16/10] max-h-[420px] w-full max-w-[420px]'
+                        ? 'aspect-[9/16] max-h-[560px] w-full max-w-[320px]'
+                        : 'aspect-[16/10] max-h-[560px] w-full max-w-[540px]'
                     } rounded-[32px] bg-slate-900/95 px-2 py-3 shadow-[0_24px_80px_rgba(15,23,42,0.75)] ring-1 ring-slate-900`}
                   >
                     {/* 裝置螢幕 */}
@@ -3220,7 +3220,16 @@ const Admin = () => {
                         )}&gradientFrom=${encodeURIComponent(
                           homeConfigFormData.gradientFrom
                         )}&gradientTo=${encodeURIComponent(homeConfigFormData.gradientTo)}`}
-                        className="h-full w-full border-0"
+                        className={`h-full w-full border-0 ${
+                          previewMode === 'mobile'
+                            ? 'transform scale-75 origin-top-left'
+                            : 'transform scale-50 origin-top-left'
+                        }`}
+                        style={
+                          previewMode === 'mobile'
+                            ? { width: '133.33%', height: '133.33%' }
+                            : { width: '200%', height: '200%' }
+                        }
                         title="首頁預覽"
                       />
                     </div>
