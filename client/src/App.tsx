@@ -8,7 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { SkeletonLoader } from './components/SkeletonLoader';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import AdminLayout from './components/AdminLayout';
-import { processHeadquartersToken } from './utils/adminAuth';
+import { processHeadquartersToken, processAuthTokenLogin } from './utils/adminAuth';
 
 // 代碼分割：動態導入頁面組件
 const Home = lazy(() => import('./pages/Home'));
@@ -61,12 +61,16 @@ const AppRoutes = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
-  // 处理总部验证 token（仅在访问 /admin 路径时）
+  // 处理总部验证 token 和 authToken（仅在访问 /admin 路径时）
   useEffect(() => {
     if (isAdminRoute) {
       // 使用 try-catch 确保不会导致应用崩溃
       const handleToken = async () => {
         try {
+          // 1. 如果 URL 上有 authToken，先嘗試用 Firebase Custom Token 自動登入
+          await processAuthTokenLogin();
+
+          // 2. 再處理原本的總部驗證邏輯（admin_token / token）
           await processHeadquartersToken();
         } catch (error) {
           console.error('处理总部验证 token 失败:', error);

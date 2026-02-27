@@ -3,6 +3,9 @@
  * 用于验证来自 edward727.com 的管理员访问权限
  */
 
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '../config/firebase';
+
 // 总部验证密钥（应该从环境变量或配置中获取，这里使用预设值）
 // 在实际部署时，应该从环境变量或安全的配置服务中获取
 // 注意：在 Vite/前端环境中不能使用 process.env，这里改用 import.meta.env
@@ -118,4 +121,41 @@ export const processHeadquartersToken = async (): Promise<boolean> => {
   }
   
   return false;
+};
+
+/**
+ * 使用 URL 中的 authToken 參數自動登入 Firebase（自動執行 signInWithCustomToken）
+ * 
+ * 用法：總部在打開後台時，帶上 ?authToken=xxx 參數，
+ * 頁面載入後會自動使用該 token 登入，避免再次輸入密碼。
+ */
+export const processAuthTokenLogin = async (): Promise<boolean> => {
+  // 僅在瀏覽器環境中執行
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  // 支援兩種寫法：authToken 或 auth_token
+  const authToken = urlParams.get('authToken') || urlParams.get('auth_token');
+
+  if (!authToken) {
+    return false;
+  }
+
+  try {
+    // 使用 Firebase Custom Token 自動登入
+    await signInWithCustomToken(auth, authToken);
+
+    // 為了安全，登入成功後把 URL 上的 authToken 移除
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('authToken');
+    newUrl.searchParams.delete('auth_token');
+    window.history.replaceState({}, '', newUrl.toString());
+
+    return true;
+  } catch (error) {
+    console.error('使用 authToken 自動登入失敗:', error);
+    return false;
+  }
 };
