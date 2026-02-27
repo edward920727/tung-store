@@ -13,7 +13,7 @@ import {
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 
 // 數據模型接口
@@ -928,6 +928,72 @@ export const uploadImage = async (file: File, path: string): Promise<string> => 
   }
 };
 
+export const uploadImageWithProgress = (
+  file: File,
+  path: string,
+  onProgress: (progress: number) => void
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        reject(new Error('圖片大小不能超過 10MB'));
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        reject(new Error('只能上傳圖片文件'));
+        return;
+      }
+
+      const storageRef = ref(storage, path);
+
+      const metadata = {
+        contentType: file.type,
+        cacheControl: 'public, max-age=31536000',
+      };
+
+      const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          if (snapshot.totalBytes > 0) {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            onProgress(progress);
+          }
+        },
+        (error: any) => {
+          console.error('圖片上傳失敗:', error);
+          if (error.code === 'storage/unauthorized') {
+            reject(new Error('您沒有權限上傳圖片，請確認已登入管理員帳號'));
+          } else if (error.code === 'storage/canceled') {
+            reject(new Error('上傳已取消'));
+          } else if (error.code === 'storage/unknown') {
+            reject(new Error('上傳失敗，請檢查網絡連接或 Firebase Storage 配置'));
+          } else if (error.message) {
+            reject(error);
+          } else {
+            reject(new Error('圖片上傳失敗，請稍後再試'));
+          }
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadURL);
+          } catch (error) {
+            console.error('獲取圖片下載 URL 失敗:', error);
+            reject(new Error('圖片上傳成功但獲取下載連結失敗，請稍後再試'));
+          }
+        }
+      );
+    } catch (error: any) {
+      console.error('圖片上傳初始化失敗:', error);
+      reject(new Error('圖片上傳失敗，請稍後再試'));
+    }
+  });
+};
+
 export const deleteImage = async (path: string): Promise<void> => {
   try {
     const storageRef = ref(storage, path);
@@ -936,6 +1002,34 @@ export const deleteImage = async (path: string): Promise<void> => {
     console.error('圖片刪除失敗:', error);
     throw error;
   }
+};
+
+const extractStoragePathFromUrl = (url: string): string | null => {
+  try {
+    const parsed = new URL(url);
+    const match = parsed.pathname.match(/\/o\/([^?]+)/);
+    if (!match || !match[1]) return null;
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+};
+
+export const deleteImagesByUrls = async (urls: string[]): Promise<void> => {
+  const paths = urls
+    .filter((url) => !!url)
+    .map((url) => extractStoragePathFromUrl(url))
+    .filter((path): path is string => !!path);
+
+  if (paths.length === 0) return;
+
+  await Promise.all(
+    paths.map((path) =>
+      deleteImage(path).catch((error) => {
+        console.warn('刪除圖片失敗（將略過此錯誤）:', error);
+      })
+    )
+  );
 };
 
 /**

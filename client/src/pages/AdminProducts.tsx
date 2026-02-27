@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import ImageCropper from '../components/ImageCropper';
-import { firestoreService, Product, uploadImage, downloadAndUploadImage } from '../services/firestore';
+import { firestoreService, Product, uploadImageWithProgress, deleteImagesByUrls } from '../services/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
 // 範例商品數據（包含懸停圖片，使用 Unsplash 無版權圖片）
@@ -116,7 +116,10 @@ const AdminProducts = () => {
     external_hover_image_url: '',
     category: ''
   });
-  const [uploadingExternalImage, setUploadingExternalImage] = useState(false);
+  const [uploadingMainImage, setUploadingMainImage] = useState(false);
+  const [uploadingHoverImage, setUploadingHoverImage] = useState(false);
+  const [mainUploadProgress, setMainUploadProgress] = useState(0);
+  const [hoverUploadProgress, setHoverUploadProgress] = useState(0);
 
   useEffect(() => {
     fetchProducts();
@@ -135,29 +138,51 @@ const AdminProducts = () => {
     }
   };
 
-  // 將 base64 圖片上傳到 Firebase Storage
-  const uploadBase64Image = async (base64String: string, type: 'main' | 'hover'): Promise<string> => {
+  // 將 base64 圖片上傳到 Firebase Storage（支援進度回報）
+  const uploadBase64Image = async (
+    base64String: string,
+    type: 'main' | 'hover',
+    onProgress?: (progress: number) => void
+  ): Promise<string> => {
     if (!firebaseUser) {
       throw new Error('請先登入管理員帳號');
     }
 
     try {
-      const base64Data = base64String.split(',')[1] || base64String;
+      const [headerPart, dataPart] = base64String.split(',');
+      const base64Data = dataPart || base64String;
+
+      let mimeType = 'image/jpeg';
+      if (headerPart && headerPart.startsWith('data:')) {
+        const match = headerPart.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64$/);
+        if (match && match[1]) {
+          mimeType = match[1];
+        }
+      }
+
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      const blob = new Blob([byteArray], { type: mimeType });
       
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(7);
-      const fileName = `${timestamp}_${randomStr}.jpg`;
-      const file = new File([blob], fileName, { type: 'image/jpeg' });
+      let extension = 'jpg';
+      if (mimeType === 'image/webp') {
+        extension = 'webp';
+      } else if (mimeType === 'image/png') {
+        extension = 'png';
+      } else if (mimeType === 'image/gif') {
+        extension = 'gif';
+      }
+      const fileName = `${timestamp}_${randomStr}.${extension}`;
+      const file = new File([blob], fileName, { type: mimeType });
       
       const path = `products/${type === 'main' ? 'main' : 'hover'}/${fileName}`;
-      const url = await uploadImage(file, path);
+      const url = await uploadImageWithProgress(file, path, onProgress || (() => {}));
       return url;
     } catch (error: any) {
       console.error('上傳 base64 圖片失敗:', error);
@@ -168,15 +193,19 @@ const AdminProducts = () => {
   const handleImageCrop = async (croppedImageUrl: string) => {
     if (croppedImageUrl.startsWith('data:')) {
       try {
-        setLoading(true);
-        const uploadedUrl = await uploadBase64Image(croppedImageUrl, 'main');
+        setUploadingMainImage(true);
+        setMainUploadProgress(0);
+        const uploadedUrl = await uploadBase64Image(croppedImageUrl, 'main', (progress) => {
+          setMainUploadProgress(progress);
+        });
         setProductFormData({ ...productFormData, image_url: uploadedUrl });
       } catch (error: any) {
         console.error('上傳圖片失敗:', error);
         alert('上傳圖片失敗: ' + (error.message || '未知錯誤') + '\n\n請檢查：\n1. 是否已登入管理員帳號\n2. Firebase Storage 配置是否正確\n3. 網絡連接是否正常');
         setProductFormData({ ...productFormData, image_url: croppedImageUrl });
       } finally {
-        setLoading(false);
+        setUploadingMainImage(false);
+        setMainUploadProgress(0);
       }
     } else {
       setProductFormData({ ...productFormData, image_url: croppedImageUrl });
@@ -186,8 +215,11 @@ const AdminProducts = () => {
   const handleHoverImageCrop = async (croppedImageUrl: string) => {
     if (croppedImageUrl.startsWith('data:')) {
       try {
-        setLoading(true);
-        const uploadedUrl = await uploadBase64Image(croppedImageUrl, 'hover');
+        setUploadingHoverImage(true);
+        setHoverUploadProgress(0);
+        const uploadedUrl = await uploadBase64Image(croppedImageUrl, 'hover', (progress) => {
+          setHoverUploadProgress(progress);
+        });
         setProductFormData({ 
           ...productFormData, 
           image_urls: [...productFormData.image_urls, uploadedUrl] 
@@ -200,7 +232,8 @@ const AdminProducts = () => {
           image_urls: [...productFormData.image_urls, croppedImageUrl] 
         });
       } finally {
-        setLoading(false);
+        setUploadingHoverImage(false);
+        setHoverUploadProgress(0);
       }
     } else {
       setProductFormData({ 
@@ -210,64 +243,13 @@ const AdminProducts = () => {
     }
   };
 
-  const handleExternalImageUpload = async () => {
-    if (!productFormData.external_image_url.trim()) {
-      alert('請輸入外部圖片 URL');
-      return;
-    }
-
-    if (!firebaseUser) {
-      alert('請先登入管理員帳號');
-      return;
-    }
-
-    setUploadingExternalImage(true);
-    try {
-      const uploadedUrl = await downloadAndUploadImage(productFormData.external_image_url);
-      setProductFormData({
-        ...productFormData,
-        image_url: uploadedUrl,
-        external_image_url: '',
-      });
-      alert('外部圖片已成功下載並上傳到 Firebase Storage！');
-    } catch (error: any) {
-      console.error('上傳外部圖片失敗:', error);
-      alert('上傳失敗: ' + (error.message || '未知錯誤'));
-    } finally {
-      setUploadingExternalImage(false);
-    }
-  };
-
-  const handleExternalHoverImageUpload = async () => {
-    if (!productFormData.external_hover_image_url.trim()) {
-      alert('請輸入外部圖片 URL');
-      return;
-    }
-
-    if (!firebaseUser) {
-      alert('請先登入管理員帳號');
-      return;
-    }
-
-    setUploadingExternalImage(true);
-    try {
-      const uploadedUrl = await downloadAndUploadImage(productFormData.external_hover_image_url);
-      setProductFormData({
-        ...productFormData,
-        image_urls: [...productFormData.image_urls, uploadedUrl],
-        external_hover_image_url: '',
-      });
-      alert('外部懸停圖片已成功下載並上傳到 Firebase Storage！');
-    } catch (error: any) {
-      console.error('上傳外部圖片失敗:', error);
-      alert('上傳失敗: ' + (error.message || '未知錯誤'));
-    } finally {
-      setUploadingExternalImage(false);
-    }
-  };
-
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (uploadingMainImage || uploadingHoverImage) {
+      alert('圖片正在上傳中，請稍候上傳完成後再保存商品。');
+      return;
+    }
     
     if (!productFormData.name.trim()) {
       alert('請填寫商品名稱');
@@ -287,26 +269,18 @@ const AdminProducts = () => {
     }
 
     if (productFormData.image_url.startsWith('data:')) {
-      const shouldContinue = window.confirm(
-        '⚠️ 警告：主圖尚未上傳到 Firebase Storage（仍為 base64 格式）。\n\n' +
-        '這可能導致保存失敗（Firestore 字段大小限制約 1MB）。\n\n' +
-        '是否要繼續保存？建議先重新上傳圖片。'
+      alert(
+        '主圖尚未完成上傳（仍為 base64 格式），為確保資料正確與效能，請重新上傳並等待上傳完成後再保存。'
       );
-      if (!shouldContinue) {
-        return;
-      }
+      return;
     }
 
     const hasBase64HoverImages = productFormData.image_urls.some(url => url.startsWith('data:'));
     if (hasBase64HoverImages) {
-      const shouldContinue = window.confirm(
-        '⚠️ 警告：部分懸停圖片尚未上傳到 Firebase Storage（仍為 base64 格式）。\n\n' +
-        '這可能導致保存失敗。\n\n' +
-        '是否要繼續保存？建議先重新上傳圖片。'
+      alert(
+        '部分懸停圖片尚未完成上傳（仍為 base64 格式），請等待圖片上傳完成或移除未完成的圖片後再保存。'
       );
-      if (!shouldContinue) {
-        return;
-      }
+      return;
     }
 
     try {
@@ -407,10 +381,26 @@ const AdminProducts = () => {
     setShowProductForm(true);
   };
 
-  const handleDeleteProduct = async (id: string) => {
+  const handleDeleteProduct = async (product: Product) => {
     if (window.confirm('確定要刪除這個商品嗎？')) {
       try {
-        await firestoreService.deleteProduct(id);
+        const urls: string[] = [];
+        if (product.image_url) {
+          urls.push(product.image_url);
+        }
+        if (product.image_urls && product.image_urls.length > 0) {
+          urls.push(...product.image_urls);
+        }
+
+        if (urls.length > 0) {
+          try {
+            await deleteImagesByUrls(urls);
+          } catch (error) {
+            console.error('刪除商品圖片失敗（將略過此錯誤）:', error);
+          }
+        }
+
+        await firestoreService.deleteProduct(product.id);
         fetchProducts();
       } catch (error) {
         console.error('刪除商品失敗:', error);
@@ -533,12 +523,18 @@ const AdminProducts = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <ImageCropper onCropComplete={handleImageCrop} aspect={1} id="main-image-cropper" />
-                      {loading && (
+                      {uploadingMainImage && (
                         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <p className="text-sm text-yellow-800">⏳ 正在上傳圖片到 Firebase Storage...</p>
+                          <div className="mt-2 w-full bg-yellow-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-yellow-500 h-2 transition-all"
+                              style={{ width: `${mainUploadProgress}%` }}
+                            />
+                          </div>
                         </div>
                       )}
-                      {productFormData.image_url && !loading && (
+                      {productFormData.image_url && !uploadingMainImage && (
                         <div className="mt-4 p-4 bg-pink-50 border-2 border-pink-300 rounded-lg">
                           <div className="flex items-center gap-2 mb-3">
                             <span className="text-pink-600 font-bold text-lg">📷</span>
@@ -576,49 +572,7 @@ const AdminProducts = () => {
                         </div>
                       )}
                     </div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          外部圖片 URL（自動下載並上傳）
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="url"
-                            value={productFormData.external_image_url}
-                            onChange={(e) => setProductFormData({ ...productFormData, external_image_url: e.target.value })}
-                            placeholder="https://example.com/image.jpg"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm"
-                            disabled={uploadingExternalImage}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleExternalImageUpload();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleExternalImageUpload}
-                            disabled={uploadingExternalImage || !productFormData.external_image_url.trim()}
-                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors whitespace-nowrap text-sm"
-                          >
-                            {uploadingExternalImage ? '上傳中...' : '上傳'}
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          或直接輸入圖片 URL
-                        </label>
-                        <input
-                          type="url"
-                          value={productFormData.image_url}
-                          onChange={(e) => setProductFormData({ ...productFormData, image_url: e.target.value })}
-                          placeholder="https://example.com/image.jpg"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-pink-500 text-sm"
-                        />
-                      </div>
-                    </div>
+                    {/* 已移除外部 URL 上傳，統一改為本地檔案裁切上傳以提升效能與穩定性 */}
                   </div>
                 </div>
 
@@ -631,47 +585,23 @@ const AdminProducts = () => {
                     <div>
                       <ImageCropper onCropComplete={handleHoverImageCrop} aspect={1} id="hover-image-cropper" />
                       <p className="text-xs text-gray-500 mt-2">上傳的圖片將添加到懸停圖片列表</p>
-                      {loading && (
+                      {uploadingHoverImage && (
                         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <p className="text-xs text-yellow-800">⏳ 正在上傳懸停圖片...</p>
+                          <div className="mt-2 w-full bg-yellow-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-yellow-500 h-2 transition-all"
+                              style={{ width: `${hoverUploadProgress}%` }}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          外部圖片 URL（自動下載並上傳）
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="url"
-                            value={productFormData.external_hover_image_url}
-                            onChange={(e) => setProductFormData({ ...productFormData, external_hover_image_url: e.target.value })}
-                            placeholder="https://example.com/hover-image.jpg"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm"
-                            disabled={uploadingExternalImage}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleExternalHoverImageUpload();
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleExternalHoverImageUpload}
-                            disabled={uploadingExternalImage || !productFormData.external_hover_image_url.trim()}
-                            className="px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors whitespace-nowrap text-sm"
-                          >
-                            {uploadingExternalImage ? '上傳中...' : '上傳'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    {/* 已移除外部 URL 上傳，統一改為本地檔案裁切上傳以提升效能與穩定性 */}
                   </div>
                   
                   {/* 懸停圖片預覽（統一顯示） */}
-                  {productFormData.image_urls.length > 0 && !loading && (
+                  {productFormData.image_urls.length > 0 && !uploadingHoverImage && (
                     <div className="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-purple-600 font-bold text-lg">🖼️</span>
@@ -731,9 +661,16 @@ const AdminProducts = () => {
               <div className="mt-4 flex space-x-4">
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg font-medium"
+                  disabled={uploadingMainImage || uploadingHoverImage}
+                  className={`bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-md shadow-lg font-medium ${
+                    uploadingMainImage || uploadingHoverImage
+                      ? 'opacity-60 cursor-not-allowed'
+                      : ''
+                  }`}
                 >
-                  ✓ 確認保存
+                  {uploadingMainImage || uploadingHoverImage
+                    ? '圖片上傳中，請稍候...'
+                    : '✓ 確認保存'}
                 </button>
                 <button
                   type="button"
@@ -802,7 +739,7 @@ const AdminProducts = () => {
                         編輯
                       </button>
                       <button
-                        onClick={() => handleDeleteProduct(product.id)}
+                        onClick={() => handleDeleteProduct(product)}
                         className="text-red-600 hover:text-red-900"
                       >
                         刪除

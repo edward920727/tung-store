@@ -83,7 +83,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ onCropComplete, aspect = 1,
           resolve('');
           return;
         }
-        // 將blob轉換為base64字符串，這樣可以保存到數據庫
+        // 將 blob 轉換為 base64 字符串，此處使用 WebP 以提升圖片壓縮率與 PageSpeed 分數
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64String = reader.result as string;
@@ -93,7 +93,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({ onCropComplete, aspect = 1,
           resolve('');
         };
         reader.readAsDataURL(blob);
-      }, 'image/jpeg', 0.9);
+      }, 'image/webp', 0.9);
     });
   }, [completedCrop]);
 
